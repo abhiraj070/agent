@@ -1,6 +1,6 @@
-def main():
-    print("Hello from ai-agent!")
+from fastapi import FastAPI
 
+app= FastAPI()
 
-if __name__ == "__main__":
-    main()
+import agent.api.chat
+

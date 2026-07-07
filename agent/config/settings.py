@@ -7,6 +7,8 @@ class Settings(BaseSettings):
 
     ANTHROPIC_API_KEY: str
     AGENT_MODEL: str
+    TWILIO_ACCOUNT_SID: str
+    TWILIO_AUTH_TOKEN: str
 
 @lru_cache()
 def get_settings()->Settings:

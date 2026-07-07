@@ -19,5 +19,5 @@ agent= Agent(
 )
 
 @agent.instructions
-def readContext(ctx: RunContext[Home_ai_deps])-> str:
+def read_context(ctx: RunContext[Home_ai_deps])-> str:
     return f"context: {ctx.deps.context}"

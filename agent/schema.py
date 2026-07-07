@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-class chatRequest(BaseModel):
+class ChatRequest(BaseModel):
     message: str
 
-class chatResponse(BaseModel):
+class ChatResponse(BaseModel):
     response: str

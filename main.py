@@ -9,4 +9,5 @@ model = WhisperModel(
     compute_type="int8",
 )
 import agent.api.chat
-
+import agent.tools
+import agent.api.rec

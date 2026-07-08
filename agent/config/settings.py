@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     AGENT_MODEL: str
     TWILIO_ACCOUNT_SID: str
     TWILIO_AUTH_TOKEN: str
+    PUBLIC_BASE_URL: str | None = None
 
 @lru_cache()
 def get_settings()->Settings:

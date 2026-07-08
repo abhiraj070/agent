@@ -5,7 +5,6 @@ from agent.orchestrator import agent
 from twilio.rest import Client
 from agent.config.settings import get_settings
 from utils.make_call import make_call
-from utils.download_audio import download_audio
 
 _settings = get_settings()
 
@@ -13,7 +12,7 @@ client = Client(_settings.TWILIO_ACCOUNT_SID, _settings.TWILIO_AUTH_TOKEN)
 From_Number= "+16592443594"
 
 @agent.tool
-def call_cook(message: str = "") -> str:
+def call_cook(ctx:RunContext[Home_ai_deps],message: str = "") -> str:
     """
     Calls the household cook and deliver a spoken message.
 
@@ -39,7 +38,7 @@ def call_cook(message: str = "") -> str:
     return response
 
 @agent.tool
-def call_maid(message: str = "") -> str:
+def call_maid(ctx:RunContext[Home_ai_deps],message: str = "") -> str:
     """
     Call the household maid and deliver a spoken message.
 
@@ -60,12 +59,16 @@ def call_maid(message: str = "") -> str:
     """
     #call logic
     to_number= "+919650256625"
-    sid= make_call(message, client, to_number, From_Number)
-    response= download_audio(sid)
-    return response
+    sid=-1
+    try:
+        sid= make_call(message, client, to_number, From_Number, _settings.PUBLIC_BASE_URL)
+        print("making the call")
+    except Exception as e:
+        print(e)
+    return f"Call initiated. Call SID: {sid}. The recording will be saved after Twilio posts back to /process_recording."
 
 @agent.tool
-def call_driver(message: str = "") -> str:
+def call_driver(ctx:RunContext[Home_ai_deps],message: str = "") -> str:
     """
     Call the household driver and deliver a spoken message.
 
@@ -94,7 +97,7 @@ def call_driver(message: str = "") -> str:
     return response
 
 @agent.tool
-def call_amrita(message: str = "") -> str:
+def call_amrita(ctx:RunContext[Home_ai_deps],message: str = "") -> str:
     """
     Call Amrita and deliver a spoken message.
 

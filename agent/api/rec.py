@@ -34,9 +34,9 @@ async def process_recording(
     with open(filename, "wb") as f:
         f.write(audio)
     print("done")
-    background_tasks.add_task(download_audio, recording_sid)
-    return Response("<Response><Say>Thank you.</Say></Response>", media_type="application/xml")
-
+    background_tasks.add_task(download_audio, recording_sid, )
+    return Response("<Response><Say>Thank you. I will share you response to the sender</Say></Response>", media_type="application/xml")
+    # TODO: can replace sender-> the name of the sender.
 
 @app.post("/recording_finished")
 async def recording_finished():

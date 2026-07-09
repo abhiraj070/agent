@@ -1,5 +1,8 @@
 from pathlib import Path
 
+from twilio.rest.insights.v3 import query
+
+
 def download_audio(recording_sid)->str:
     from main import model
 
@@ -15,7 +18,8 @@ def download_audio(recording_sid)->str:
     text = ""
     for segment in segments:
         text += segment.text + " "
-    transcript_file = recordings_dir / f"{recording_sid}.txt"
-    transcript_file.write_text(text.strip())
+    # TODO: create a resold dict of from_user_number, name, to_user_number, name, message.
+    # resul={query_user:}
+    # TODO: send this test to WhatsApp/UI.
     print(text)
     return text

@@ -4,7 +4,7 @@ from pydantic_ai import Agent, RunContext
 #from agent.config.settings import get_settings
 from pydantic_ai.providers.ollama import OllamaProvider
 from pydantic_ai.models.ollama import OllamaModel
-from agent.deps import Home_ai_deps
+from agent.deps import CallAiDeps
 
 #_settings= get_settings()
 model = OllamaModel(
@@ -13,11 +13,11 @@ model = OllamaModel(
 )
 agent= Agent(
     model=model,
-    deps_type= Home_ai_deps,
+    deps_type= CallAiDeps,
     output_type= str
 )
-home_agent = agent
+call_agent = agent
 
 @agent.instructions
-def read_context(ctx: RunContext[Home_ai_deps])-> str:
+def read_context(ctx: RunContext[CallAiDeps])-> str:
     return f"context: {ctx.deps.context}"

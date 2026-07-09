@@ -32,6 +32,5 @@ def make_call(message: str, client, to_number: str, from_number: str, public_bas
         to=to_number,
         from_=from_number,
     )
-    # TODO: create a seperate table for call logs. from->to. update "to" everytime, if from is already present. store the numbers with their names.you can use call.sid for unique call. rec req will contain so search wil be easy
     print("Call initiated!")
     return call.sid

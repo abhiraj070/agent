@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: str
     TWILIO_AUTH_TOKEN: str
     PUBLIC_BASE_URL: str
+    DATABASE_URL: str
 
 @lru_cache()
 def get_settings()->Settings:

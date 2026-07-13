@@ -33,7 +33,7 @@ class Member(base):
     user_description = Column(String, default="")
     users= relationship(
         "User",
-        secondary="user_member",
+        secondary="UserMember",
         back_populates="members"
     )
 
@@ -43,6 +43,6 @@ class User(base):
     name = Column(String, nullable=False)
     members = relationship(
         "Member",
-        secondary="user_member",
+        secondary="UserMember",
         back_populates="users"
     )

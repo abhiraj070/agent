@@ -15,6 +15,7 @@ async def root():
 async def chat(request: ChatRequest) -> ChatResponse:
     print("request reached")
     message = request.message
+    user_id= request.user.id
     members= await UserRepository.get_members()
     member_context= [
             f"{m.saved_name} is saved as {m.nick_name} in the users contacts. Their description: {m.description}, "
@@ -27,7 +28,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         "Analyse what the user want, figure out whom to call, read members description and make the most appropriate call"
         + "\n".join(member_context)
     )
-    deps = CallAiDeps(context=context)
+    deps = CallAiDeps(context=context,user_id=user_id)
     result = await call_agent.run(message, deps=deps)
 
     return ChatResponse(response=result.output)

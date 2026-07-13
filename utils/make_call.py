@@ -16,7 +16,6 @@ def make_call(message: str, client, to_number: str, from_number: str, ngrok_base
     twiml = f"""
         <Response>
             <Say voice="alice">{escape(message)}</Say>
-            <Say voice="alice">Please leave a message after the beep.</Say>
             <Record
                 maxLength="60"
                 method="POST"

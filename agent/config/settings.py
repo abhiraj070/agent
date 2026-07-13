@@ -9,8 +9,10 @@ class Settings(BaseSettings):
     AGENT_MODEL: str
     TWILIO_ACCOUNT_SID: str
     TWILIO_AUTH_TOKEN: str
-    PUBLIC_BASE_URL: str
+    NGROK_BASE_URL: str
     DATABASE_URL: str
+    ELEVEN_LABS_API_KEY: str
+    VOICE_ID: str
 
 @lru_cache()
 def get_settings()->Settings:

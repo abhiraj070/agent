@@ -1,13 +1,8 @@
 from fastapi import FastAPI
-from faster_whisper import WhisperModel
-
+from fastapi.staticfiles import StaticFiles
 app= FastAPI()
 
-model = WhisperModel(
-    "base",
-    device="cpu",
-    compute_type="int8",
-)
+app.mount("/audio", StaticFiles(directory="audio"), name="audio")
 import agent.api.chat
 import agent.tools
 import agent.api.rec

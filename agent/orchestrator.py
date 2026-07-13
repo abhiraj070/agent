@@ -4,6 +4,7 @@ from pydantic_ai import Agent, RunContext
 #from agent.config.settings import get_settings
 from pydantic_ai.providers.ollama import OllamaProvider
 from pydantic_ai.models.ollama import OllamaModel
+from pydantic_ai.settings import ModelSettings
 from agent.deps import CallAiDeps
 
 #_settings= get_settings()
@@ -14,7 +15,8 @@ model = OllamaModel(
 agent= Agent(
     model=model,
     deps_type= CallAiDeps,
-    output_type= str
+    output_type= str,
+    model_settings=ModelSettings(temperature=0,max_tokens=128,),
 )
 call_agent = agent
 

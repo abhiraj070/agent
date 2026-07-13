@@ -1,11 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from agent.db.model.user import User
+class UserReference(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
 
 
 class ChatRequest(BaseModel):
-    user: User
+    #user: UserReference
     message: str
+
 
 class ChatResponse(BaseModel):
     response: str

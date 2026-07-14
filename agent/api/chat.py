@@ -25,6 +25,7 @@ async def chat(
     if not members:
         return ChatResponse(response="No household members have been added yet.")
 
+    phone_number = user.phone_number
     member_context = [
         (
             f"{member.nick_name}: "
@@ -42,7 +43,7 @@ async def chat(
         "Use natural smooth human language in each member's preferred_language. "
         "Contacts: " + ", ".join(member_context)
     )
-    deps = CallAiDeps(context=context)
+    deps = CallAiDeps(context=context, from_phone_number= str(phone_number))
 
     result = await call_agent.run(message, deps=deps)
 

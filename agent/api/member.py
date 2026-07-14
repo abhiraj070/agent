@@ -8,8 +8,6 @@ from typing import Annotated
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-UserId= Annotated[str, Depends(get_current_user)]
-
 ROLE_DESCRIPTIONS = {
     Role.Cook: """
         Responsible for all cooking and meal preparation.
@@ -87,7 +85,7 @@ def normalize_role(role: str) -> Role:
 @app.post("/add_members")
 def add_members(
         body: AddMemberRequest,
-        user_id: UserId,
+        user_id: Annotated[str, Depends(get_current_user)],
         db: Session = Depends(get_db),
 ) -> dict[str, int | str]:
     user = db.get(User, int(user_id))

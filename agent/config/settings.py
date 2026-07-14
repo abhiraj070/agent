@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     REFRESH_TOKEN_EXPIRE_DAYS: int
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    TWILIO_SERVICE_SID: str
 
 @lru_cache()
 def get_settings()->Settings:

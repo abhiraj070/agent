@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     ELEVEN_LABS_API_KEY: str
     VOICE_ID: str
+    SECRET_KEY: str
+    REFRESH_TOKEN_EXPIRE_DAYS: int
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
 @lru_cache()
 def get_settings()->Settings:

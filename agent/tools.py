@@ -19,12 +19,7 @@ directory={
     "driver": "+918809008666"
 }
 
-def fetch_contact(person_name: str)-> str:
-    # TODO: fetch the person to call by the Google contacts if not present then call the api contact picker and let the user choose the number and person_name.
-    return directory[person_name]
-
-async def start_household_call(person_name: str, message: str) -> str:
-    to_number= fetch_contact(person_name)
+async def start_household_call(to_number: str, message: str) -> str:
     return await asyncio.to_thread(
         make_call,
         message,
@@ -35,18 +30,18 @@ async def start_household_call(person_name: str, message: str) -> str:
     )
 
 @agent.tool
-async def call_someone(ctx: RunContext[CallAiDeps], person_name: str, message: str = "") -> str:
+async def call_someone(ctx: RunContext[CallAiDeps], phone_number: str, message: str = "") -> str:
     """
     Call one household member and deliver that person's spoken message.
     Use this tool once for every household member the user asks to notify, inform,
     or instruct. For a multi-person request, make separate calls with each person's
     own instructions; do not combine their messages into one call.
     Args:
-        person_name: The household member to call.
+        phone_number: The household number to call.
         message: The message to convey.
     """
     try:
-        sid = await start_household_call(person_name, message)
+        sid = await start_household_call(phone_number, message)
     except Exception as exc:
         return f"Call could not be initiated: {exc}"
 

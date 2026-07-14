@@ -16,8 +16,6 @@ agent= Agent(
     model=model,
     deps_type= CallAiDeps,
     output_type= str,
-    # Run every requested function call even if the model emits a final reply
-    # in the same response.
     end_strategy="exhaustive",
     model_settings=ModelSettings(temperature=0,max_tokens=192,),
 )

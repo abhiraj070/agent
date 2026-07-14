@@ -1,70 +1,47 @@
+from fastapi import Depends, HTTPException, status
+from Auth.VerifyJWT import get_current_user
 from agent.deps import CallAiDeps
 from agent.orchestrator import call_agent
 from agent.schema import ChatRequest, ChatResponse
 from main import app
-
-USER_NAME = "Abhiraj"
-
-@app.get("/")
-async def root():
-    #TODO: connect the api contact picker
-    #TODO: connect google OAuth for Google contacts
-    #TODO: take users phone number-> for identifying me
-    return {"message": "Hello from ai-agent!"}
+from agent.db.connect import get_db
+from agent.db.model.user import User
+from typing import Annotated
+from sqlalchemy.orm import Session
 
 @app.post("/chat")
-async def chat(request: ChatRequest) -> ChatResponse:
-    print("request reached")
+async def chat(
+        request: ChatRequest,
+        user_id: Annotated[str, Depends(get_current_user)],
+        db: Session = Depends(get_db),
+) -> ChatResponse:
     message = request.message
-    user_name= USER_NAME
-    #user_id= request.user.id
-    #members= await UserRepository.get_members()
-    members={
-        "maid": {
-            "nick_name": "maid",
-            "role": "maid",
-            "description": """
-                Responsible for routine household chores and cleanliness.
-                Primary responsibilities:
-                - Carrying out general cleaning and maintenance tasks.
-                - Receiving household-related instructions from the user.
-            """,
-        },
 
-        "cook": {
-            "nick_name": "cook",
-            "role": "cook",
-            "description": """
-                Responsible for all cooking and meal preparation.
-                Primary responsibilities:
-                - Preparing breakfast, lunch, dinner, snacks, tea, coffee, and other beverages.
-                - Handling requests related to meals and food preparation.
-            """,
-        },
+    user = db.get(User, int(user_id))
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-        "driver": {
-            "nick_name": "driver",
-            "role": "driver",
-            "description": """
-                Responsible for transportation and travel assistance.
-                Primary responsibilities:
-                - Driving the user or family members.
-                - Pickup and drop-off arrangements.
-            """,
-        },
-    }
-    member_context= [
-            f"{members[m]["nick_name"]}: {members[m]["role"]}"
-            for m in members
-        ]
+    members = user.members
+    if not members:
+        return ChatResponse(response="No household members have been added yet.")
+
+    member_context = [
+        (
+            f"{member.nick_name}: "
+            f"role={member.role.value.replace('_', ' ')}, "
+            f"phone_number={member.phone_number}, "
+            f"preferred_language={member.preferred_language}"
+        )
+        for member in members
+    ]
     context = (
         "Route calls fast. Split the request by household member. "
         "Call call_someone once per requested member, then move on. "
         "Never repeat a member or combine instructions. "
-        f"Use one short sentence starting with '{user_name} asked me to ask/tell you'. "
+        "Use the member's phone_number when calling. "
+        "Use natural smooth human language in each member's preferred_language. "
         "Contacts: " + ", ".join(member_context)
     )
-    #deps = CallAiDeps(context=context,user_id=user_id)
     deps = CallAiDeps(context=context)
 
     result = await call_agent.run(message, deps=deps)

@@ -1,117 +1,119 @@
+from fastapi import Depends, HTTPException, status
+from Auth.VerifyJWT import get_current_user
 from main import app
-from agent.db.model.user import Member
-from agent.db.connect import session
-@app.post("/add_members")
-def add_members(nick_name: str, saved_name: str, role: str | None=None, description: str="")-> None:
-    #postgres logic for adding this into the users table
-    role_description={
-        "cook": """
-            Responsible for all cooking and meal preparation.
-            Primary responsibilities:
-            - Preparing breakfast, lunch, dinner, snacks, tea, coffee, and other beverages.
-            - Following meal or recipe instructions.
-            - Preparing food for specific occasions or guests.
-            - Handling requests related to meals and food preparation.
-            - Managing cooking-related grocery or ingredient requests when instructed.
-            This person should handle any request related to cooking, meals, or food preparation.
-        """,
+from agent.db.model.user import Member, Role, User
+from agent.db.connect import get_db
+from agent.schema import AddMemberRequest
+from typing import Annotated
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-        "maid": """
-            Responsible for routine household chores and cleanliness.
-            Primary responsibilities:
-            - Cleaning rooms and common areas.
-            - Sweeping, mopping, dusting, and organizing.
-            - Washing utensils, doing laundry, and other household chores.
-            - Carrying out general cleaning and maintenance tasks.
-            - Receiving household-related instructions from the user.
-            This person should handle requests related to cleaning, laundry, and general household chores.
-        """,
+UserId= Annotated[str, Depends(get_current_user)]
 
-        "driver": """
+ROLE_DESCRIPTIONS = {
+    Role.Cook: """
+        Responsible for all cooking and meal preparation.
+        Primary responsibilities:
+        - Preparing breakfast, lunch, dinner, snacks, tea, coffee, and other beverages.
+        - Handling requests related to meals and food preparation.
+    """,
+    Role.Maid: """
+        Responsible for routine household chores and cleanliness.
+        Primary responsibilities:
+        - Carrying out general cleaning and maintenance tasks.
+        - Receiving household-related instructions from the user.
+    """,
+    Role.Driver: """
         Responsible for transportation and travel assistance.
-            Primary responsibilities:
-            - Driving the user or family members.
-            - Pickup and drop-off arrangements.
-            - Airport, railway station, office, school, and other travel.
-            - Preparing the vehicle before scheduled travel.
-            - Handling transportation-related instructions.
-            This person should handle requests involving travel, transportation, pickups, drop-offs, or vehicle-related assistance.
-        """,
-
-        "house_manager": """
-            Primary household caretaker responsible for managing the home.
-            Primary responsibilities:
-            - Preparing the house before the user's arrival.
-            - Cleaning, organizing, and coordinating household activities.
-            - Switching household appliances on or off, such as ACs and lights.
-            - Looking after pets, including feeding.
-            - Handling general household assistance that does not belong to a more specialized role.
-            This person should handle general household management requests and coordinate home-related tasks when no other specialized household member is more appropriate.
-        """,
-
-        "gardner": """
+        Primary responsibilities:
+        - Driving the user or family members.
+        - Pickup and drop-off arrangements.
+    """,
+    Role.House_Manager: """
+        Primary household caretaker responsible for managing the home.
+        Primary responsibilities:
+        - Preparing the house before the user's arrival.
+        - Switching household appliances on or off, such as ACs and lights.
+    """,
+    Role.Gardner: """
         Responsible for maintaining the garden and outdoor plants.
-            Primary responsibilities:
-            - Watering plants, trees, and lawns.
-            - Trimming, pruning, and maintaining plants.
-            - Lawn mowing and general garden maintenance.
-            - Planting new flowers, shrubs, or trees.
-            - Removing weeds and keeping outdoor areas clean.
-            - Monitoring plant health and reporting issues.
-            This person should handle requests involving gardening, lawn care, plant maintenance, watering, pruning, or any outdoor landscape-related tasks.
-        """,
-
-        "nanny": """
+        Primary responsibilities:
+        - Watering plants, trees, and lawns.
+        - Trimming, pruning, and maintaining plants.
+    """,
+    Role.Nanny: """
         Responsible for childcare and the well-being of children.
-            Primary responsibilities:
-            - Supervising and caring for children.
-            - Feeding, bathing, and dressing children.
-            - Assisting with homework and educational activities.
-            - Organizing playtime and recreational activities.
-            - Preparing children for school or bedtime.
-            - Monitoring children's safety and daily routines.
-            This person should handle requests involving childcare, babysitting, children's daily routines, educational support, or child supervision.
-
-        """,
-
-        "dog_walker": """
-            Responsible for caring for and exercising dogs.
-            Primary responsibilities:
-            - Walking dogs according to their schedule.
-            - Cleaning up after the dog during walks.
-            - Providing basic companionship and exercise.
-            This person should handle requests involving dog walking, exercising.
-        """,
-
-        "maintenance": """
+        Primary responsibilities:
+        - Supervising and caring for children.
+        - Feeding, bathing, and dressing children.
+    """,
+    Role.Dog_Walker: """
+        Responsible for caring for and exercising dogs.
+        Primary responsibilities:
+        - Walking dogs according to their schedule.
+        - Cleaning up after the dog during walks.
+    """,
+    Role.Maintenance: """
         Responsible for home repairs and maintenance tasks.
-            Primary responsibilities:
-            - Repairing household fixtures and appliances.
-            - Fixing plumbing, electrical, or carpentry issues when appropriate.
-            - Installing or assembling household items.
-            - Performing routine maintenance and inspections.
-            - Coordinating with external technicians for major repairs.
-            - Troubleshooting household equipment and reporting unresolved issues.
-            This person should handle requests involving repairs, installations, maintenance, troubleshooting, or technical household issues.
-        """,
-
-        "security": """
+        Primary responsibilities:
+        - Repairing household fixtures and appliances.
+        - Fixing plumbing, electrical, or carpentry issues when appropriate.
+    """,
+    Role.Security: """
         Responsible for ensuring the safety and security of the property.
-            Primary responsibilities:
-            - Monitoring entry and exit of visitors.
-            - Patrolling the property and checking for security concerns.
-            - Verifying deliveries and visitor access.
-            - Responding to suspicious activity or emergencies.
-            - Locking and unlocking gates or entrances as instructed.
-            - Reporting security incidents or unusual events.
-            This person should handle requests involving property security, visitor management, access control, surveillance, or safety-related assistance.
-        """
-    }
+        Primary responsibilities:
+        - Patrolling the property and checking for security concerns.
+        - Responding to suspicious activity or emergencies.
+        - Reporting security incidents or unusual events.
+    """,
+}
 
-    member= Member(contact_name=saved_name, nick_name=nick_name, user_description=description, role=role)
-    if role is not None and role!='Family' and role!='Friend':
-        member.description=role_description[role]
-    member.users.append(member)
-    session.add(member)
-    session.commit()
-    return
+
+def normalize_role(role: str) -> Role:
+    cleaned_role = role.strip().lower().replace(" ", "_")
+    for role_option in Role:
+        if cleaned_role in {
+            role_option.name.lower(),
+            role_option.value.lower(),
+            role_option.value.lower().replace(" ", "_"),
+        }:
+            return role_option
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=f"Unsupported role: {role}",
+    )
+
+
+@app.post("/add_members")
+def add_members(
+        body: AddMemberRequest,
+        user_id: UserId,
+        db: Session = Depends(get_db),
+) -> dict[str, int | str]:
+    user = db.get(User, int(user_id))
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    role = normalize_role(body.role)
+    member = db.scalar(
+        select(Member).where(
+            Member.nick_name == body.nick_name,
+            Member.phone_number == body.phone_number,
+            Member.role == role,
+        )
+    )
+    if member is None:
+        member = Member(
+            nick_name=body.nick_name,
+            role=role,
+            preferred_language=body.preferred_language,
+            phone_number=body.phone_number,
+        )
+        db.add(member)
+
+    if user not in member.users:
+        member.users.append(user)
+
+    db.commit()
+    db.refresh(member)
+    return {"member_id": member.id, "status": "added"}

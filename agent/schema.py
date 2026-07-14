@@ -7,8 +7,13 @@ class UserReference(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    #user: UserReference
     message: str
+
+class AddMemberRequest(BaseModel):
+    phone_number: str
+    role: str
+    preferred_language: str
+    nick_name: str
 
 
 class ChatResponse(BaseModel):

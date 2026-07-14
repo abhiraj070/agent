@@ -13,4 +13,9 @@ SessionLocal = sessionmaker(
     expire_on_commit=False,
 )
 
-session = SessionLocal
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

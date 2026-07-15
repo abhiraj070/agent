@@ -1,4 +1,5 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class UserReference(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -24,3 +25,5 @@ class WsMessageRequest(BaseModel):
     message: str
     to_phone_number: str
     from_phone_number: str
+    want_callback: bool
+    delay_minutes: int = Field(..., ge=1)

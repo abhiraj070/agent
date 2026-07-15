@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from main import app
@@ -17,7 +18,11 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data= await websocket.receive()
             validated_data= WsMessageRequest.model_validate(data)
-            make_call(validated_data.message, validated_data.to_phone_number, validated_data.from_phone_number)i
+            want_callback= validated_data.want_callback
+            delay_minutes= validated_data.delay_minutes
+            if want_callback:
+                await asyncio.sleep(delay_minutes*60)
+                make_call(validated_data.message, validated_data.to_phone_number, validated_data.from_phone_number)
     except WebSocketDisconnect as e:
         raise e
     except Exception as e:

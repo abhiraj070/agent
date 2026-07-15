@@ -4,3 +4,4 @@ from dataclasses import dataclass
 class CallAiDeps:
     from_phone_number: str
     context: str
+    connection_id: str

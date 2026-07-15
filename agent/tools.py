@@ -4,23 +4,21 @@ from pydantic_ai import RunContext
 
 from agent.deps import CallAiDeps
 from agent.orchestrator import agent
-from twilio.rest import Client
-from agent.config.settings import get_settings
 from utils.make_call import make_call
+from agent.api.websocket import ws_connections
 
-_settings = get_settings()
+callSid_to_connection = {}
 
-client = Client(_settings.TWILIO_ACCOUNT_SID, _settings.TWILIO_AUTH_TOKEN)
-
-async def start_household_call(to_number: str, from_number: str, message: str) -> str:
-    return await asyncio.to_thread(
+async def start_household_call(to_number: str, from_number: str, message: str, connection_id: str) -> str:
+    sid= await asyncio.to_thread(
         make_call,
         message,
-        client,
         to_number,
         from_number,
-        _settings.NGROK_BASE_URL,
     )
+    connection= ws_connections[connection_id]
+    callSid_to_connection[sid] = {connection, from_number, to_number}
+    return sid
 
 @agent.tool
 async def call_someone(ctx: RunContext[CallAiDeps], to_phone_number: str, message: str = "") -> str:
@@ -34,8 +32,9 @@ async def call_someone(ctx: RunContext[CallAiDeps], to_phone_number: str, messag
         message: The message to convey.
     """
     from_phone_number = ctx.deps.from_phone_number
+    connection_id = ctx.deps.connection_id
     try:
-        sid = await start_household_call(to_phone_number, from_phone_number, message)
+        sid = await start_household_call(to_phone_number, from_phone_number, message, connection_id)
     except Exception as exc:
         return f"Call could not be initiated: {exc}"
 

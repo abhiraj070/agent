@@ -16,7 +16,7 @@ async def chat(
         db: Session = Depends(get_db),
 ) -> ChatResponse:
     message = request.message
-
+    connection_id = request.connection_id
     user = db.get(User, int(user_id))
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -43,7 +43,7 @@ async def chat(
         "Use natural smooth human language in each member's preferred_language. "
         "Contacts: " + ", ".join(member_context)
     )
-    deps = CallAiDeps(context=context, from_phone_number= str(phone_number))
+    deps = CallAiDeps(context=context, from_phone_number= str(phone_number), connection_id= connection_id)
 
     result = await call_agent.run(message, deps=deps)
 

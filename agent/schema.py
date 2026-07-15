@@ -7,6 +7,7 @@ class UserReference(BaseModel):
 
 
 class ChatRequest(BaseModel):
+    connection_id: str
     message: str
 
 class AddMemberRequest(BaseModel):
@@ -18,3 +19,8 @@ class AddMemberRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+
+class WsMessageRequest(BaseModel):
+    message: str
+    to_phone_number: str
+    from_phone_number: str

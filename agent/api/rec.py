@@ -17,7 +17,7 @@ async def process_recording(
         print(f"recording not ready: {recording_sid} status={recording_status}")
         return {"status": "ignored", "recording_status": recording_status}
 
-    background_tasks.add_task(download_and_transcribe, recording_url + ".wav", recording_sid, call_sid, from_number, to_number)
+    background_tasks.add_task(download_and_transcribe, recording_url + ".wav", recording_sid, call_sid)
     return Response(status_code=204)
 
 @app.post("/recording_finished")

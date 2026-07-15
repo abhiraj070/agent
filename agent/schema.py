@@ -26,4 +26,4 @@ class WsMessageRequest(BaseModel):
     to_phone_number: str
     from_phone_number: str
     want_callback: bool
-    delay_minutes: int = Field(..., ge=1)
+    delay_minutes: int = Field(default=0, ge=0)

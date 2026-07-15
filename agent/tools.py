@@ -5,9 +5,7 @@ from pydantic_ai import RunContext
 from agent.deps import CallAiDeps
 from agent.orchestrator import agent
 from utils.make_call import make_call
-from agent.api.websocket import ws_connections
-
-callSid_to_connection = {}
+from agent.call_state import get_ws_connection, register_call
 
 async def start_household_call(to_number: str, from_number: str, message: str, connection_id: str) -> str:
     sid= await asyncio.to_thread(
@@ -16,8 +14,10 @@ async def start_household_call(to_number: str, from_number: str, message: str, c
         to_number,
         from_number,
     )
-    connection= ws_connections[connection_id]
-    callSid_to_connection[sid] = {connection, from_number, to_number}
+    connection = get_ws_connection(connection_id)
+    if connection is None:
+        raise ValueError("WebSocket connection is no longer active.")
+    register_call(sid, connection, from_number, to_number)
     return sid
 
 @agent.tool

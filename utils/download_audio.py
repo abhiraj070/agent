@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import httpx
-from agent.tools import callSid_to_connection
+from agent.call_state import get_call_connection
 from agent.config.settings import get_settings
 
 
@@ -20,11 +20,11 @@ def get_transcription_model():
 async def download_and_transcribe(recording_url: str, recording_sid: str, call_sid: str) -> str:
     """Fetch and transcribe a completed recording outside the webhook response."""
     settings = get_settings()
-    response = httpx.get(
-        recording_url,
-        auth=(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN),
-        timeout=30.0,
-    )
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            recording_url,
+            auth=(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN),
+        )
     response.raise_for_status()
 
     RECORDINGS_DIR.mkdir(exist_ok=True)
@@ -45,7 +45,8 @@ async def transcribe_recording(recording_sid: str, call_sid: str) -> str:
         model = get_transcription_model()
         segments, _ = model.transcribe(str(recording_file), beam_size=5, vad_filter=True)
         text = " ".join(segment.text.strip() for segment in segments).strip()
-        connection= callSid_to_connection[call_sid].connection
+        call_context = get_call_connection(call_sid)
+        connection = call_context.connection if call_context else None
         if connection:
             await connection.send_json({"message": text, "status": "completed"})
         return text

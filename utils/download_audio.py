@@ -41,12 +41,15 @@ async def transcribe_recording(recording_sid: str, call_sid: str) -> str:
     recording_file = RECORDINGS_DIR / f"{recording_sid}.wav"
     if not recording_file.exists():
         raise FileNotFoundError(f"Recording file does not exist yet: {recording_file}")
-
-    model = get_transcription_model()
-    segments, _ = model.transcribe(str(recording_file), beam_size=5, vad_filter=True)
-    text = " ".join(segment.text.strip() for segment in segments).strip()
-    connection= callSid_to_connection[call_sid].connection
-    if connection:
-        await connection.send_json({"message": text, "status": "completed"})
-    return text
+    try:
+        model = get_transcription_model()
+        segments, _ = model.transcribe(str(recording_file), beam_size=5, vad_filter=True)
+        text = " ".join(segment.text.strip() for segment in segments).strip()
+        connection= callSid_to_connection[call_sid].connection
+        if connection:
+            await connection.send_json({"message": text, "status": "completed"})
+        return text
+    finally:
+        if recording_file.exists():
+            recording_file.unlink()
 download_audio = transcribe_recording

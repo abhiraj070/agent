@@ -1,5 +1,6 @@
-from html import escape
+import os
 
+from utils.generate_audio import generate_audio
 from twilio.base.exceptions import TwilioRestException
 from utils.twilio_client import client
 from agent.config.settings import get_settings
@@ -15,14 +16,16 @@ def make_call(message: str, to_number: str, from_number: str) -> str:
     ngrok_base_url= _settings.NGROK_BASE_URL
     if not ngrok_base_url:
         raise ValueError("NGROK_BASE_URL must be set to the public HTTPS server URL.")
-
+    filename= generate_audio(message)
     base_url = ngrok_base_url.rstrip("/")
     recording_action_url = base_url + "/recording_finished"
     recording_status_callback_url = base_url + "/process_recording"
     call_status_callback_url = base_url + "/call-status"
+    audio_url=f"{base_url}/audio/{filename}"
+
     twiml = f"""
         <Response>
-            <Say voice="alice">{escape(message)}</Say>
+            <Play>{audio_url}</Play>
             <Record
                 maxLength="60"
                 method="POST"

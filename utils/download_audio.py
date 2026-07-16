@@ -11,14 +11,15 @@ RECORDINGS_DIR = Path("recordings")
 
 @lru_cache(maxsize=1)
 def get_transcription_model():
-    """Load Whisper only when there is a completed recording to process."""
-    from faster_whisper import WhisperModel
-
-    return WhisperModel("base", device="cpu", compute_type="int8")
+    _settings = get_settings()
+    #from faster_whisper import WhisperModel
+    #return WhisperModel("base", device="cpu", compute_type="int8")
+    from openai import AsyncOpenAI
+    client = AsyncOpenAI(api_key=_settings.OPENAI_API_KEY)
+    return client
 
 
 async def download_and_transcribe(recording_url: str, recording_sid: str, call_sid: str) -> str:
-    """Fetch and transcribe a completed recording outside the webhook response."""
     settings = get_settings()
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.get(
@@ -42,9 +43,16 @@ async def transcribe_recording(recording_sid: str, call_sid: str) -> str:
     if not recording_file.exists():
         raise FileNotFoundError(f"Recording file does not exist yet: {recording_file}")
     try:
-        model = get_transcription_model()
-        segments, _ = model.transcribe(str(recording_file), beam_size=5, vad_filter=True)
-        text = " ".join(segment.text.strip() for segment in segments).strip()
+        #model = get_transcription_model()
+        #segments, _ = model.transcribe(str(recording_file), beam_size=5, vad_filter=True)
+        #text = " ".join(segment.text.strip() for segment in segments).strip()
+        client= get_transcription_model()
+        with recording_file.open("rb") as audio_file:
+            transcript = await client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+            )
+        text= transcript.text
         call_context = get_call_connection(call_sid)
         connection = call_context.connection if call_context else None
         if connection:

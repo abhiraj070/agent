@@ -9,6 +9,7 @@ wheels/
 # Virtual environments
 .venv
 .env
-
+*.iml
+.idea/
 recordings
 audio

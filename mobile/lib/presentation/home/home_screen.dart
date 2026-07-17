@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/people_controller.dart';
 import '../../application/task_flow_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/bottom_sheet_shell.dart';
 import '../../core/widgets/pill_button.dart';
 import '../../domain/entities/task_phase.dart';
 import '../shared_sheets/composer_sheet.dart';
-import '../shared_sheets/person_form_sheet.dart';
-import 'widgets/clarify_card.dart';
 import 'widgets/execution_view.dart';
 import 'widgets/listening_view.dart';
 import 'widgets/mic_button.dart';
@@ -42,40 +38,9 @@ class HomeScreen extends ConsumerWidget {
     final flow = ref.watch(taskFlowControllerProvider);
     final controller = ref.read(taskFlowControllerProvider.notifier);
 
-    ref.listen<TaskFlowState>(taskFlowControllerProvider, (previous, next) {
-      final wasRequesting = previous?.requestPersonSheet ?? false;
-      if (next.requestPersonSheet && !wasRequesting) {
-        controller.clearPersonSheetRequest();
-        BottomSheetShell.show(
-          context,
-          child: PersonFormSheet(
-            prefillName: next.missingName,
-            onSubmit: ({
-              required name,
-              required role,
-              required phone,
-              required language,
-              note,
-            }) async {
-              await ref.read(peopleControllerProvider.notifier).add(
-                    name: name,
-                    role: role,
-                    phone: phone,
-                    language: language,
-                    note: note,
-                  );
-              if (context.mounted) {
-                AppToast.show(context, '$name added to My People');
-              }
-            },
-          ),
-        );
-      }
-    });
-
     final activeChore = flow.phase == TaskPhase.working || flow.phase == TaskPhase.planning;
-    final subline = flow.clarification.isNotEmpty
-        ? flow.clarification
+    final subline = flow.errorMessage.isNotEmpty
+        ? flow.errorMessage
         : switch (flow.phase) {
             TaskPhase.idle => 'Say it once. I’ll handle the calls.',
             TaskPhase.listening => flow.transcript.isEmpty ? 'Go ahead…' : flow.transcript,
@@ -104,18 +69,10 @@ class HomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           if (flow.phase == TaskPhase.working || flow.phase == TaskPhase.planning)
-            ExecutionView(
-              phase: flow.phase,
-              assistantReply: flow.assistantReply,
-              nodes: flow.nodes,
-              activeNode: flow.activeNode,
-              onNodeTap: controller.toggleDetail,
-            )
+            ExecutionView(phase: flow.phase, assistantReply: flow.assistantReply)
           else if (flow.phase == TaskPhase.complete)
-            ResultCard(result: flow.result, resultSource: flow.resultSource),
-          if (flow.clarification.isNotEmpty)
-            ClarifyCard(onSend: controller.sendClarification)
-          else if (flow.phase == TaskPhase.idle) ...[
+            ResultCard(result: flow.result),
+          if (flow.phase == TaskPhase.idle) ...[
             const SizedBox(height: 24),
             MicButton(onTap: controller.beginVoice),
             const SizedBox(height: 20),
@@ -162,16 +119,7 @@ class HomeScreen extends ConsumerWidget {
                 decoration: const BoxDecoration(
                   border: Border(top: BorderSide(color: AppColors.line)),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _DetailStat(label: 'Calls placed', value: '${flow.nodes.length}'),
-                    ),
-                    Expanded(
-                      child: const _DetailStat(label: 'Completed', value: 'Just now'),
-                    ),
-                  ],
-                ),
+                child: const _DetailStat(label: 'Completed', value: 'Just now'),
               ),
               const SizedBox(height: 6),
               const Text(

@@ -1,277 +1,206 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/local/seed_data.dart';
+import '../data/local/audio_recorder.dart';
+import '../data/remote/api_exception.dart';
 import '../domain/entities/activity_item.dart';
-import '../domain/entities/task_node.dart';
 import '../domain/entities/task_phase.dart';
+import 'account_setup_controller.dart';
 import 'activity_controller.dart';
-
-enum TaskKind { driver, shanti, paneer, generic }
+import 'app_stage_controller.dart';
+import 'chat_socket_controller.dart';
+import 'onboarding_controller.dart';
+import 'providers.dart';
 
 class TaskFlowState {
   const TaskFlowState({
     this.phase = TaskPhase.idle,
     this.transcript = '',
-    this.nodes = const [],
-    this.result = '',
-    this.resultSource = 'Outcome',
     this.assistantReply = '',
-    this.clarification = '',
-    this.missingName = '',
+    this.result = '',
+    this.errorMessage = '',
     this.detailOpen = false,
-    this.requestPersonSheet = false,
   });
 
   final TaskPhase phase;
   final String transcript;
-  final List<TaskNode> nodes;
-  final String result;
-  final String resultSource;
   final String assistantReply;
-  final String clarification;
-  final String missingName;
+  final String result;
+  final String errorMessage;
   final bool detailOpen;
-  final bool requestPersonSheet;
-
-  TaskNode? get activeNode {
-    for (final node in nodes) {
-      if (node.state == NodeState.calling || node.state == NodeState.preparing) {
-        return node;
-      }
-    }
-    return null;
-  }
 
   TaskFlowState copyWith({
     TaskPhase? phase,
     String? transcript,
-    List<TaskNode>? nodes,
-    String? result,
-    String? resultSource,
     String? assistantReply,
-    String? clarification,
-    String? missingName,
+    String? result,
+    String? errorMessage,
     bool? detailOpen,
-    bool? requestPersonSheet,
   }) {
     return TaskFlowState(
       phase: phase ?? this.phase,
       transcript: transcript ?? this.transcript,
-      nodes: nodes ?? this.nodes,
-      result: result ?? this.result,
-      resultSource: resultSource ?? this.resultSource,
       assistantReply: assistantReply ?? this.assistantReply,
-      clarification: clarification ?? this.clarification,
-      missingName: missingName ?? this.missingName,
+      result: result ?? this.result,
+      errorMessage: errorMessage ?? this.errorMessage,
       detailOpen: detailOpen ?? this.detailOpen,
-      requestPersonSheet: requestPersonSheet ?? this.requestPersonSheet,
     );
   }
 }
 
-/// Ports the fake voice/call pipeline from UI_design/app/page.tsx
-/// (`beginVoice`/`runTask`/`finishTask`) — same regex-based routing and
-/// timer delays, so behavior matches the reference mockup exactly. Real
-/// backend wiring (agent/api) replaces this controller's internals in a
-/// later pass; the phase machine and UI it drives stay the same.
+/// Drives the home screen's phase machine (idle → listening → planning →
+/// working → complete). Two separate real paths feed it, both landing on
+/// the same real outcome text via [_finishTask]:
+///
+/// - Voice: [beginVoice] records real audio; [finishSpeakingNow] stops
+///   the recording and uploads it as-is to `POST /receive-audio-file`.
+///   No transcription happens client-side — the backend transcribes and
+///   runs the orchestrator, returning the same outcome shape as the text
+///   path.
+/// - Text ("type instead"): [submitText] → [runTask] → `POST
+///   /recieve-message` directly, since it's already text.
+///
+/// Both need a live `/ws` connection behind `connection_id` (see
+/// [ChatSocketController]) or the orchestrator's calls fail server-side;
+/// if that connection isn't up yet, this surfaces as [errorMessage]
+/// rather than attempting the call.
 class TaskFlowController extends StateNotifier<TaskFlowState> {
   TaskFlowController(this._ref) : super(const TaskFlowState());
 
   final Ref _ref;
-  final List<Timer> _timers = [];
+  final AppAudioRecorder _audioRecorder = AppAudioRecorder();
 
-  void _later(Duration delay, void Function() action) {
-    _timers.add(Timer(delay, action));
-  }
-
-  void beginVoice() {
+  Future<void> beginVoice() async {
     if (state.phase != TaskPhase.idle) return;
-    state = state.copyWith(phase: TaskPhase.listening, transcript: '');
-    _later(const Duration(milliseconds: 900), () {
-      state = state.copyWith(transcript: 'I’m eating paneer butter masala today…');
-    });
-    _later(const Duration(milliseconds: 1950), () {
+    if (!await _ensureAuthenticated()) return;
+
+    final hasPermission = await _audioRecorder.hasPermission();
+    if (!hasPermission) {
       state = state.copyWith(
-        transcript:
-            'I’m eating paneer butter masala today. Check what we need and coordinate dinner for 8.',
+        errorMessage: 'Aaraam needs microphone access — enable it in Settings.',
       );
-    });
-    _later(const Duration(milliseconds: 3100), () => runTask(TaskKind.paneer));
+      return;
+    }
+
+    try {
+      await _audioRecorder.start();
+    } catch (_) {
+      state = state.copyWith(errorMessage: 'Couldn’t start recording. Try again.');
+      return;
+    }
+
+    state = state.copyWith(phase: TaskPhase.listening, transcript: '', errorMessage: '');
   }
 
-  void finishSpeakingNow() => runTask(TaskKind.paneer);
+  /// Stops recording and uploads the file to `/receive-audio-file`.
+  /// `working` doubles as the "uploading" state here — there's no
+  /// separate phase for it, since the underlying phase machine is shared
+  /// with the text/chat path and this keeps that machine untouched.
+  Future<void> finishSpeakingNow() async {
+    if (state.phase != TaskPhase.listening) return;
+    if (!await _ensureAuthenticated()) return;
+
+    final connectionId = _ref.read(chatSocketControllerProvider).connectionId;
+    if (connectionId == null) {
+      await _discardRecording();
+      state = state.copyWith(
+        phase: TaskPhase.idle,
+        errorMessage: 'Still connecting — give it a second and try again.',
+      );
+      return;
+    }
+
+    String? path;
+    try {
+      path = await _audioRecorder.stop();
+      if (path == null) {
+        state = state.copyWith(
+          phase: TaskPhase.idle,
+          errorMessage: 'Didn’t catch that — try again.',
+        );
+        return;
+      }
+      state = state.copyWith(
+        phase: TaskPhase.working,
+        assistantReply: 'Sending your recording…',
+        errorMessage: '',
+      );
+      final response = await _ref.read(audioRepositoryProvider).uploadRecording(
+            filePath: path,
+            connectionId: connectionId,
+          );
+      _finishTask(response);
+    } on ApiException catch (e) {
+      state = state.copyWith(phase: TaskPhase.idle, errorMessage: e.message);
+    } finally {
+      if (path != null) {
+        await _audioRecorder.deleteFile(path);
+      }
+    }
+  }
+
+  Future<void> _discardRecording() async {
+    final path = await _audioRecorder.stop();
+    if (path != null) {
+      await _audioRecorder.deleteFile(path);
+    }
+  }
 
   void submitText(String draft) {
     final trimmed = draft.trim();
     if (trimmed.isEmpty) return;
-    final lowered = trimmed.toLowerCase();
-    final TaskKind kind;
-    if (RegExp('anil|driver|gate').hasMatch(lowered)) {
-      kind = TaskKind.driver;
-    } else if (RegExp('shanti').hasMatch(lowered)) {
-      kind = TaskKind.shanti;
-    } else if (RegExp('paneer|dinner|cook').hasMatch(lowered)) {
-      kind = TaskKind.paneer;
-    } else {
-      kind = TaskKind.generic;
-    }
-    runTask(kind, customText: trimmed);
+    runTask(trimmed);
   }
 
-  void sendClarification(String detail) {
-    runTask(TaskKind.generic,
-        customText: 'Call maintenance for an electrician on $detail');
+  /// Guards every path into `/chat`: if there's no stored session, this
+  /// bounces straight to the phone-verification step of onboarding
+  /// (step 3) instead of letting the request go out and fail with a 401.
+  /// Also resets the account-setup sub-flow back to its phone-entry stage
+  /// — that controller is long-lived and may still be sitting on
+  /// `language` from a prior successful run, which would otherwise show
+  /// the wrong screen at step 3.
+  Future<bool> _ensureAuthenticated() async {
+    final tokens = await _ref.read(secureTokenStorageProvider).read();
+    if (tokens != null) return true;
+    _ref.read(accountSetupControllerProvider.notifier).changeNumber();
+    _ref.read(onboardingControllerProvider.notifier).goToStep(3);
+    _ref.read(appStageControllerProvider.notifier).enterOnboarding();
+    return false;
   }
 
-  void runTask(TaskKind kind, {String? customText}) {
-    final text = customText ?? state.transcript;
+  Future<void> runTask(String text) async {
+    if (!await _ensureAuthenticated()) return;
+
     state = state.copyWith(
       phase: TaskPhase.planning,
-      clarification: '',
+      transcript: text,
       assistantReply: 'Request understood. Coordinating now.',
-      transcript: customText ?? state.transcript,
+      errorMessage: '',
     );
 
-    _later(const Duration(milliseconds: 650), () {
-      if (RegExp('rahul|ramesh|unknown', caseSensitive: false).hasMatch(text)) {
-        final nameMatch = RegExp(
-          r'(?:ask|call)\s+([A-Za-z]+(?:\s+ji)?)',
-          caseSensitive: false,
-        ).firstMatch(text);
-        final missing = nameMatch?.group(1) ?? 'Rahul';
-        state = state.copyWith(
-          missingName: missing,
-          phase: TaskPhase.idle,
-          assistantReply: 'I don’t have $missing in My People yet.',
-          requestPersonSheet: true,
-        );
-        return;
-      }
-
-      final isMaintenance =
-          RegExp('maintenance|electrician', caseSensitive: false).hasMatch(text);
-      final hasWhen = RegExp(
-        'today|tomorrow|sunday|monday|morning|afternoon|evening|[0-9]',
-        caseSensitive: false,
-      ).hasMatch(text);
-      if (isMaintenance && !hasWhen) {
-        state = state.copyWith(
-          clarification: 'When should the electrician come?',
-          phase: TaskPhase.idle,
-          assistantReply: 'When should the electrician come?',
-        );
-        return;
-      }
-
-      state = state.copyWith(phase: TaskPhase.working);
-
-      if (kind == TaskKind.driver ||
-          RegExp('anil|driver|gate', caseSensitive: false).hasMatch(text)) {
-        _runDriverFlow();
-        return;
-      }
-
-      if (kind == TaskKind.shanti ||
-          RegExp('shanti', caseSensitive: false).hasMatch(text)) {
-        _runShantiFlow();
-        return;
-      }
-
-      if (kind == TaskKind.paneer ||
-          RegExp('paneer|dinner|cook', caseSensitive: false).hasMatch(text)) {
-        _runPaneerFlow();
-        return;
-      }
-
-      _runGenericFlow();
-    });
-  }
-
-  void _runDriverFlow() {
-    state = state.copyWith(nodes: const [
-      TaskNode(id: 'anil', person: 'Anil ji', action: 'Come to the main gate', state: NodeState.calling),
-    ]);
-    _later(const Duration(milliseconds: 2200), () {
-      state = state.copyWith(nodes: const [
-        TaskNode(id: 'anil', person: 'Anil ji', action: 'Meet at Gate 2', state: NodeState.done),
-      ]);
-    });
-    _later(const Duration(milliseconds: 3000), () {
-      _finishTask('Anil ji will meet you at Gate 2.', 'Response from Anil ji', '1 call · 38 sec');
-    });
-  }
-
-  void _runShantiFlow() {
-    state = state.copyWith(nodes: const [
-      TaskNode(id: 'shanti', person: 'Shanti', action: 'Ask when she’ll come', state: NodeState.calling),
-    ]);
-    _later(const Duration(milliseconds: 2600), () {
-      state = state.copyWith(nodes: const [
-        TaskNode(id: 'shanti', person: 'Shanti', action: 'Coming around 6 pm', state: NodeState.done),
-      ]);
-    });
-    _later(const Duration(milliseconds: 3400), () {
-      _finishTask('Shanti says she’ll come at 6 pm.', 'Response from Shanti', '1 call · 42 sec');
-    });
-  }
-
-  void _runPaneerFlow() {
-    final base = SeedData.paneerNodes;
-    state = state.copyWith(nodes: base);
-    _later(const Duration(milliseconds: 1800), () {
-      state = state.copyWith(nodes: [
-        base[0].copyWith(state: NodeState.done, action: 'Paneer, tomatoes & butter needed'),
-        base[1].copyWith(state: NodeState.calling),
-        base[2],
-        base[3],
-      ]);
-    });
-    _later(const Duration(milliseconds: 3900), () {
-      state = state.copyWith(nodes: [
-        base[0].copyWith(state: NodeState.done, action: 'Pantry checked'),
-        base[1].copyWith(state: NodeState.done, action: 'Delivery by 6:15 pm'),
-        base[2].copyWith(state: NodeState.calling),
-        base[3].copyWith(state: NodeState.preparing),
-      ]);
-    });
-    _later(const Duration(milliseconds: 5900), () {
-      state = state.copyWith(nodes: [
-        base[0].copyWith(state: NodeState.done, action: 'Pantry checked'),
-        base[1].copyWith(state: NodeState.done, action: 'Delivery by 6:15 pm'),
-        base[2].copyWith(state: NodeState.done, action: 'Dinner ready by 8 pm'),
-        base[3].copyWith(state: NodeState.calling),
-      ]);
-    });
-    _later(const Duration(milliseconds: 7600), () {
+    final connectionId = _ref.read(chatSocketControllerProvider).connectionId;
+    if (connectionId == null) {
       state = state.copyWith(
-        nodes: base.map((n) => n.copyWith(state: NodeState.done)).toList(),
+        phase: TaskPhase.idle,
+        errorMessage: 'Still connecting — give it a second and try again.',
       );
-      _finishTask('Dinner coordinated for 8 pm.', 'Household outcome', '4 calls · 7 min');
-    });
+      return;
+    }
+
+    state = state.copyWith(phase: TaskPhase.working);
+    try {
+      final response = await _ref
+          .read(chatRepositoryProvider)
+          .sendMessage(connectionId: connectionId, message: text);
+      _finishTask(response);
+    } on ApiException catch (e) {
+      state = state.copyWith(phase: TaskPhase.idle, errorMessage: e.message);
+    }
   }
 
-  void _runGenericFlow() {
-    state = state.copyWith(nodes: const [
-      TaskNode(id: 'task', person: 'Assistant', action: 'Coordinating your request', state: NodeState.calling),
-    ]);
-    _later(const Duration(milliseconds: 2800), () {
-      state = state.copyWith(nodes: const [
-        TaskNode(id: 'task', person: 'Assistant', action: 'Request completed', state: NodeState.done),
-      ]);
-      _finishTask('The person confirmed your request.', 'Outcome', '1 completed request');
-    });
-  }
-
-  void _finishTask(String message, String source, String meta) {
-    state = state.copyWith(
-      result: message,
-      resultSource: source,
-      phase: TaskPhase.complete,
-    );
+  void _finishTask(String message) {
+    state = state.copyWith(result: message, phase: TaskPhase.complete);
     _ref.read(activityControllerProvider.notifier).add(
-          ActivityItem(time: 'Just now', title: message, meta: meta),
+          ActivityItem(time: 'Just now', title: message, meta: 'Handled by Aaraam'),
         );
   }
 
@@ -279,23 +208,20 @@ class TaskFlowController extends StateNotifier<TaskFlowState> {
     state = state.copyWith(detailOpen: !state.detailOpen);
   }
 
-  void clearPersonSheetRequest() {
-    state = state.copyWith(requestPersonSheet: false);
-  }
-
   void reset() {
-    for (final timer in _timers) {
-      timer.cancel();
+    if (state.phase == TaskPhase.listening) {
+      // Release the mic and discard whatever was captured — the user
+      // navigated away mid-recording.
+      _audioRecorder.stop().then((path) {
+        if (path != null) _audioRecorder.deleteFile(path);
+      });
     }
-    _timers.clear();
     state = const TaskFlowState();
   }
 
   @override
   void dispose() {
-    for (final timer in _timers) {
-      timer.cancel();
-    }
+    _audioRecorder.dispose();
     super.dispose();
   }
 }

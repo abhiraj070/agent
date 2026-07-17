@@ -10,3 +10,4 @@ import agent.api.rec
 import agent.api.member
 import agent.api.start
 import agent.api.status
+import agent.api.user

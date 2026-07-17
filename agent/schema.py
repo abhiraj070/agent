@@ -27,3 +27,11 @@ class WsMessageRequest(BaseModel):
     from_phone_number: str
     want_callback: bool
     delay_minutes: int = Field(default=0, ge=0)
+
+class MemberResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    nick_name: str
+    phone_number: str
+    role: str
+    preferred_language: str

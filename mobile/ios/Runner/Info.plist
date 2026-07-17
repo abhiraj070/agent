@@ -28,6 +28,8 @@
 	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>This app needs microphone access for voice input.</string>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 		<key>UISceneConfigurations</key>

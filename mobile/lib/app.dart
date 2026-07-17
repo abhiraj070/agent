@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'application/app_stage_controller.dart';
+import 'application/chat_socket_controller.dart';
 import 'application/people_controller.dart';
 import 'application/screen_controller.dart';
 import 'application/task_flow_controller.dart';
@@ -54,11 +55,17 @@ class _AppRoot extends ConsumerWidget {
 /// activity body swapping beneath it — ports the always-visible `.topbar`
 /// from UI_design/app/page.tsx, which stays mounted across those three
 /// screens while only the body below it changes.
+///
+/// Also where the `/ws` connection for `/chat` gets established: watching
+/// [chatSocketControllerProvider] here creates it the moment the user
+/// reaches this screen (after login/signup) and keeps it alive for as
+/// long as `_MainShell` stays mounted, i.e. the rest of the session.
 class _MainShell extends ConsumerWidget {
   const _MainShell();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(chatSocketControllerProvider);
     final screen = ref.watch(currentScreenProvider);
     final people = ref.watch(peopleControllerProvider);
 

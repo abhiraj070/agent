@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/local/seed_data.dart';
+import '../data/remote/api_exception.dart';
 import '../domain/entities/activity_item.dart';
 import '../domain/entities/person.dart';
 import 'activity_controller.dart';
 import 'app_stage_controller.dart';
-import 'people_controller.dart';
 import 'providers.dart';
 
 class OnboardingState {
@@ -18,6 +18,8 @@ class OnboardingState {
     this.firstInstruction = '',
     this.firstTaskDone = false,
     this.exampleIndex = 0,
+    this.isAddingPerson = false,
+    this.addPersonError,
   });
 
   final int step;
@@ -26,6 +28,8 @@ class OnboardingState {
   final String firstInstruction;
   final bool firstTaskDone;
   final int exampleIndex;
+  final bool isAddingPerson;
+  final String? addPersonError;
 
   String get firstOutcome => activePerson != null
       ? '${activePerson!.name} confirmed your request.'
@@ -38,6 +42,9 @@ class OnboardingState {
     String? firstInstruction,
     bool? firstTaskDone,
     int? exampleIndex,
+    bool? isAddingPerson,
+    String? addPersonError,
+    bool clearAddPersonError = false,
   }) {
     return OnboardingState(
       step: step ?? this.step,
@@ -46,13 +53,19 @@ class OnboardingState {
       firstInstruction: firstInstruction ?? this.firstInstruction,
       firstTaskDone: firstTaskDone ?? this.firstTaskDone,
       exampleIndex: exampleIndex ?? this.exampleIndex,
+      isAddingPerson: isAddingPerson ?? this.isAddingPerson,
+      addPersonError:
+          clearAddPersonError ? null : (addPersonError ?? this.addPersonError),
     );
   }
 }
 
 /// Ports the `Onboarding` component's step machine from
-/// UI_design/app/page.tsx: 6 steps, a rotating example carousel on step 1,
-/// and a fake "reaching them" delay on step 5.
+/// UI_design/app/page.tsx, extended with an account-setup step (phone/OTP/
+/// reply language) between Privacy and Add Person: 0 Welcome, 1 Demo,
+/// 2 Privacy, 3 Account setup, 4 Add person, 5 First instruction, 6 Result.
+/// Step 1 runs a rotating example carousel; step 6 runs a fake "reaching
+/// them" delay.
 class OnboardingController extends StateNotifier<OnboardingState> {
   OnboardingController(this._ref) : super(const OnboardingState());
 
@@ -67,7 +80,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     } else {
       _exampleTimer?.cancel();
     }
-    if (step == 5) {
+    if (step == 6) {
       _startFirstTaskTimer();
     } else {
       _resultTimer?.cancel();
@@ -93,25 +106,47 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     });
   }
 
-  void submitFirstPerson({
+  /// Calls `/add_members` directly (not through PeopleController) so this
+  /// person is fully synced before PeopleController ever gets constructed
+  /// — that controller's own first-read `refresh()` will pick them up
+  /// naturally once the user reaches the main screen, with no separate
+  /// merge step and no race between two things writing to its state at
+  /// once.
+  Future<void> submitFirstPerson({
     required String name,
     required String role,
     required String phone,
     required String language,
-  }) {
-    final person = Person.create(
-      name: name.trim().isEmpty ? 'My person' : name.trim(),
-      role: role,
-      phone: phone.trim().isEmpty ? '+91' : phone.trim(),
-      language: language,
-      note: 'Added during first setup',
-    );
-    state = state.copyWith(
-      pendingPeople: [...state.pendingPeople, person],
-      activePerson: person,
-      firstInstruction: '',
-    );
-    goToStep(4);
+  }) async {
+    final resolvedName = name.trim().isEmpty ? 'My person' : name.trim();
+    final resolvedPhone = phone.trim().isEmpty ? '+91' : phone.trim();
+    state = state.copyWith(isAddingPerson: true, clearAddPersonError: true);
+    try {
+      final memberId = await _ref.read(memberRepositoryProvider).addMember(
+            nickName: resolvedName,
+            role: role,
+            preferredLanguage: language,
+            phoneNumber: resolvedPhone,
+          );
+      final person = Person(
+        id: memberId,
+        name: resolvedName,
+        role: role,
+        phone: resolvedPhone,
+        language: language,
+        note: 'Added during first setup',
+        initials: Person.initialsFor(resolvedName),
+      );
+      state = state.copyWith(
+        pendingPeople: [...state.pendingPeople, person],
+        activePerson: person,
+        firstInstruction: '',
+        isAddingPerson: false,
+      );
+      goToStep(5);
+    } on ApiException catch (e) {
+      state = state.copyWith(isAddingPerson: false, addPersonError: e.message);
+    }
   }
 
   void updateFirstInstruction(String value) {
@@ -120,13 +155,10 @@ class OnboardingController extends StateNotifier<OnboardingState> {
 
   void submitFirstInstruction() {
     if (state.firstInstruction.trim().isEmpty) return;
-    goToStep(5);
+    goToStep(6);
   }
 
   Future<void> completeOnboarding() async {
-    await _ref
-        .read(peopleControllerProvider.notifier)
-        .addAllIfMissing(state.pendingPeople);
     await _ref.read(activityControllerProvider.notifier).add(
           ActivityItem(
             time: 'Just now',

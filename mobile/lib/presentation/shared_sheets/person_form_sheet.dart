@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/pill_button.dart';
 import '../../core/widgets/role_picker.dart';
 import '../../data/local/seed_data.dart';
+import '../../data/remote/api_exception.dart';
 
-typedef PersonFormSubmit = void Function({
+typedef PersonFormSubmit = Future<void> Function({
   required String name,
   required String role,
   required String phone,
@@ -13,8 +15,9 @@ typedef PersonFormSubmit = void Function({
   String? note,
 });
 
-/// Ports `.person-form`: the "Add to My People" sheet, reused both from the
-/// My People screen and from the task flow's "I don't have X yet" prompt.
+/// Ports `.person-form`: the "Add to My People" sheet, opened from the My
+/// People screen. Submitting hits `/add_members` for real — the sheet
+/// stays open with an inline error on failure instead of always closing.
 class PersonFormSheet extends StatefulWidget {
   const PersonFormSheet({
     super.key,
@@ -36,6 +39,8 @@ class _PersonFormSheetState extends State<PersonFormSheet> {
   final _noteController = TextEditingController();
   String _role = SeedData.personRoles.first;
   String _language = SeedData.languages.first;
+  bool _isSubmitting = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -45,16 +50,29 @@ class _PersonFormSheetState extends State<PersonFormSheet> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
-    widget.onSubmit(
-      name: _nameController.text,
-      role: _role,
-      phone: _phoneController.text,
-      language: _language,
-      note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
-    );
-    Navigator.of(context).pop();
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      await widget.onSubmit(
+        name: _nameController.text,
+        role: _role,
+        phone: _phoneController.text,
+        language: _language,
+        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+      );
+      if (mounted) Navigator.of(context).pop();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _error = e.message;
+      });
+    }
   }
 
   @override
@@ -104,6 +122,10 @@ class _PersonFormSheetState extends State<PersonFormSheet> {
             controller: _noteController,
             hintText: 'Usual hours, pronunciation…',
           ),
+          if (_error != null) ...[
+            const SizedBox(height: 4),
+            Text(_error!, style: const TextStyle(color: AppColors.errorSoft, fontSize: 9)),
+          ],
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -112,14 +134,14 @@ class _PersonFormSheetState extends State<PersonFormSheet> {
                 label: 'Cancel',
                 variant: PillButtonVariant.ghost,
                 expand: false,
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 9),
               PillButton(
-                label: 'Add to My People',
+                label: _isSubmitting ? 'Adding…' : 'Add to My People',
                 variant: PillButtonVariant.accent,
                 expand: false,
-                onPressed: _submit,
+                onPressed: _isSubmitting ? null : _submit,
               ),
             ],
           ),

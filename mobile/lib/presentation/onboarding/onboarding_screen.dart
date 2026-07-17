@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/onboarding_controller.dart';
 import '../../core/theme/app_colors.dart';
+import 'steps/account_setup_step.dart';
 import 'steps/add_person_step.dart';
 import 'steps/demo_step.dart';
 import 'steps/first_instruction_step.dart';
@@ -10,8 +11,11 @@ import 'steps/first_result_step.dart';
 import 'steps/privacy_step.dart';
 import 'steps/welcome_step.dart';
 
-/// Ports the `Onboarding` component from UI_design/app/page.tsx: a 6-step
-/// flow with a shared top bar (brand + progress dots) and a step body that
+const _stepCount = 7;
+
+/// Ports the `Onboarding` component from UI_design/app/page.tsx, extended
+/// with an account-setup step (phone/OTP/reply language): a 7-step flow
+/// with a shared top bar (brand + progress dots) and a step body that
 /// swaps underneath it.
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
@@ -61,7 +65,7 @@ class OnboardingScreen extends ConsumerWidget {
                     ],
                   ),
                   Row(
-                    children: List.generate(6, (index) {
+                    children: List.generate(_stepCount, (index) {
                       final active = index == state.step;
                       final passed = index < state.step;
                       return AnimatedContainer(
@@ -115,12 +119,19 @@ class OnboardingScreen extends ConsumerWidget {
           onContinue: () => controller.goToStep(3),
         );
       case 3:
-        return AddPersonStep(
-          hasExistingPending: state.pendingPeople.isNotEmpty,
+        return AccountSetupStep(
           onBack: () => controller.goToStep(2),
-          onSubmit: controller.submitFirstPerson,
+          onContinue: () => controller.goToStep(4),
         );
       case 4:
+        return AddPersonStep(
+          hasExistingPending: state.pendingPeople.isNotEmpty,
+          isSubmitting: state.isAddingPerson,
+          errorMessage: state.addPersonError,
+          onBack: () => controller.goToStep(3),
+          onSubmit: controller.submitFirstPerson,
+        );
+      case 5:
         final person = state.activePerson;
         if (person == null) {
           return WelcomeStep(onBegin: () => controller.goToStep(1));
@@ -130,9 +141,9 @@ class OnboardingScreen extends ConsumerWidget {
           instruction: state.firstInstruction,
           onInstructionChanged: controller.updateFirstInstruction,
           onSubmit: controller.submitFirstInstruction,
-          onAddAnother: () => controller.goToStep(3),
+          onAddAnother: () => controller.goToStep(4),
         );
-      case 5:
+      case 6:
         final person = state.activePerson;
         if (person == null) {
           return WelcomeStep(onBegin: () => controller.goToStep(1));

@@ -1,34 +1,11 @@
-import '../../domain/entities/activity_item.dart';
 import '../../domain/entities/onboarding_example.dart';
-import '../../domain/entities/person.dart';
-import '../../domain/entities/task_node.dart';
 
-/// Static seed content ported from UI_design/app/page.tsx so the app opens
-/// with the same illustrative data as the reference mockup.
+/// Static seed content. `onboardingExamples` is part of the onboarding
+/// pitch itself (explicitly illustrative, shown before any real account
+/// exists) — everything else the app displays now comes from real local
+/// or backend data.
 class SeedData {
   const SeedData._();
-
-  static const List<Person> initialPeople = [
-    Person(id: 1, name: 'Anil ji', role: 'Driver', phone: '+91 98••• 2201', language: 'Hindi', note: 'Usually near the main gate', initials: 'AJ'),
-    Person(id: 2, name: 'Bhim', role: 'Cook', phone: '+91 99••• 1842', language: 'Hindi', note: 'Dinner shift', initials: 'BH'),
-    Person(id: 3, name: 'Amrita', role: 'Nanny', phone: '+91 97••• 4310', language: 'English', note: 'With Tara on weekdays', initials: 'AM'),
-    Person(id: 4, name: 'Shanti', role: 'Househelp', phone: '+91 96••• 9084', language: 'Hindi', initials: 'SH'),
-    Person(id: 5, name: 'Fresh Basket', role: 'Grocery', phone: '+91 11••• 7820', language: 'Hinglish', note: 'Society market', initials: 'FB'),
-    Person(id: 6, name: 'Maintenance', role: 'Society office', phone: '+91 11••• 1108', language: 'English', initials: 'MO'),
-  ];
-
-  static const List<ActivityItem> activitySeed = [
-    ActivityItem(time: '8:42 am', title: 'Anil ji will meet you at Gate 2.', meta: '1 call · 38 sec'),
-    ActivityItem(time: 'Yesterday', title: 'Coco’s walk is set for 6:30 pm.', meta: '1 call · 1 min'),
-    ActivityItem(time: 'Yesterday', title: 'Dinner coordinated for 8 pm.', meta: '4 calls · 7 min'),
-  ];
-
-  static const List<TaskNode> paneerNodes = [
-    TaskNode(id: 'amrita', person: 'Amrita', action: 'Check what’s at home', state: NodeState.calling),
-    TaskNode(id: 'grocery', person: 'Fresh Basket', action: 'Order what’s missing', state: NodeState.waiting),
-    TaskNode(id: 'bhim', person: 'Bhim', action: 'Cook paneer butter masala', state: NodeState.waiting),
-    TaskNode(id: 'shanti', person: 'Shanti', action: 'Coordinate cleaning', state: NodeState.waiting),
-  ];
 
   static const List<OnboardingExample> onboardingExamples = [
     OnboardingExample(request: 'Ask my driver to meet me at the gate in five minutes.', source: 'Driver replied', result: '“I’ll be at Gate 2.”', initials: 'DR'),
@@ -37,14 +14,18 @@ class SeedData {
     OnboardingExample(request: 'Ask maintenance for an electrician on Sunday afternoon.', source: 'Maintenance confirmed', result: 'Electrician booked for Sunday, 3 pm.', initials: 'MO'),
   ];
 
+  /// Matches the backend's Role enum (agent/db/model/user.py) exactly so
+  /// every role picked here round-trips through `POST /add_members`.
   static const List<String> personRoles = [
     'Driver',
     'Cook',
+    'Maid',
     'Nanny',
-    'Househelp',
-    'Dog walker',
-    'Vendor',
-    'Society office',
+    'Gardner',
+    'Dog Walker',
+    'House Manager',
+    'Maintenance',
+    'Security',
     'Other',
   ];
 

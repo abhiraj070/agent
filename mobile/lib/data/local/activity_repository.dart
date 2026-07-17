@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/entities/activity_item.dart';
-import 'seed_data.dart';
 
-/// Mirrors the mockup's `localStorage` key "aaraam-activity".
+/// Mirrors the mockup's `localStorage` key "aaraam-activity". Purely a
+/// local history of real completed requests — nothing seeds it.
 class ActivityRepository {
   ActivityRepository(this._prefs);
 
@@ -14,7 +14,7 @@ class ActivityRepository {
 
   List<ActivityItem> load() {
     final raw = _prefs.getString(_key);
-    if (raw == null) return SeedData.activitySeed;
+    if (raw == null) return const [];
     final decoded = jsonDecode(raw) as List<dynamic>;
     return decoded
         .map((item) => ActivityItem.fromJson(item as Map<String, dynamic>))

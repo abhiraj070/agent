@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/role_picker.dart';
 import '../../../data/local/seed_data.dart';
 
-typedef SubmitFirstPerson = void Function({
+typedef SubmitFirstPerson = Future<void> Function({
   required String name,
   required String role,
   required String phone,
@@ -14,15 +15,21 @@ typedef SubmitFirstPerson = void Function({
 });
 
 /// Step 3 — ports the first-person form (role picker + name/language/phone).
+/// Submitting hits `/add_members` for real, so this surfaces a loading
+/// state and inline error rather than always advancing.
 class AddPersonStep extends StatefulWidget {
   const AddPersonStep({
     super.key,
     required this.hasExistingPending,
+    required this.isSubmitting,
+    required this.errorMessage,
     required this.onBack,
     required this.onSubmit,
   });
 
   final bool hasExistingPending;
+  final bool isSubmitting;
+  final String? errorMessage;
   final VoidCallback onBack;
   final SubmitFirstPerson onSubmit;
 
@@ -45,6 +52,7 @@ class _AddPersonStepState extends State<AddPersonStep> {
   }
 
   void _submit() {
+    if (widget.isSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
     widget.onSubmit(
       name: _nameController.text,
@@ -104,11 +112,23 @@ class _AddPersonStepState extends State<AddPersonStep> {
               ),
             ),
           ),
+          if (widget.errorMessage != null) ...[
+            Text(
+              widget.errorMessage!,
+              style: const TextStyle(color: AppColors.errorSoft, fontSize: 9),
+            ),
+            const SizedBox(height: 8),
+          ],
           Row(
             children: [
               PillButton(label: 'Back', variant: PillButtonVariant.ghost, expand: false, onPressed: widget.onBack),
               const SizedBox(width: 9),
-              Expanded(child: PillButton(label: 'Meet Aaraam', onPressed: _submit)),
+              Expanded(
+                child: PillButton(
+                  label: widget.isSubmitting ? 'Adding…' : 'Meet Aaraam',
+                  onPressed: widget.isSubmitting ? null : _submit,
+                ),
+              ),
             ],
           ),
         ],

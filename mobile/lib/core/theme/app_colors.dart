@@ -19,6 +19,10 @@ class AppColors {
   static const Color ambientOne = Color(0xFF317D56);
   static const Color ambientTwo = Color(0xFF514D2B);
 
+  /// Muted rose for inline error copy (e.g. a wrong OTP). Desaturated to
+  /// stay in the app's calm register — never a loud alarm red.
+  static const Color errorSoft = Color(0xFFD4837A);
+
   static const RadialGradient stageBackground = RadialGradient(
     center: Alignment(0, -0.7),
     radius: 1.2,

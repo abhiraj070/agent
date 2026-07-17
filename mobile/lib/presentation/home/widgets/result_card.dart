@@ -5,21 +5,15 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/person_avatar.dart';
 
 /// Ports `.result-card`: the completed-outcome summary shown once a task
-/// finishes.
+/// finishes. `/chat` returns a single response with no per-contact
+/// attribution, so this no longer tries to guess a source from the text.
 class ResultCard extends StatelessWidget {
-  const ResultCard({super.key, required this.result, required this.resultSource});
+  const ResultCard({super.key, required this.result});
 
   final String result;
-  final String resultSource;
 
   @override
   Widget build(BuildContext context) {
-    final initials = resultSource.contains('Shanti')
-        ? 'SH'
-        : resultSource.contains('Anil')
-            ? 'AJ'
-            : '✓';
-
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 18),
@@ -34,17 +28,17 @@ class ResultCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              PersonAvatar(initials: initials, size: 33),
+              const PersonAvatar(initials: '✓', size: 33),
               const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: const [
                   Text(
-                    resultSource.toUpperCase(),
-                    style: const TextStyle(color: AppColors.green, fontSize: 8, letterSpacing: 1),
+                    'OUTCOME',
+                    style: TextStyle(color: AppColors.green, fontSize: 8, letterSpacing: 1),
                   ),
-                  const SizedBox(height: 3),
-                  const Text('Just now', style: TextStyle(color: AppColors.faint, fontSize: 8)),
+                  SizedBox(height: 3),
+                  Text('Just now', style: TextStyle(color: AppColors.faint, fontSize: 8)),
                 ],
               ),
             ],

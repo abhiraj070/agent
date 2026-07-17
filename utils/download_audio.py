@@ -2,6 +2,8 @@ from functools import lru_cache
 from pathlib import Path
 
 import httpx
+from fastapi import UploadFile
+
 from agent.call_state import get_call_connection
 from agent.config.settings import get_settings
 
@@ -62,3 +64,12 @@ async def transcribe_recording(recording_sid: str, call_sid: str) -> str:
         if recording_file.exists():
             recording_file.unlink()
 download_audio = transcribe_recording
+
+async def transcribe_audio_file(audio: UploadFile) -> str:
+    client = get_transcription_model()
+    audio_bytes = await audio.read()
+    transcript = await client.audio.transcriptions.create(
+        model="whisper-1",
+        file=(audio.filename or "recording.m4a", audio_bytes),
+    )
+    return transcript.text

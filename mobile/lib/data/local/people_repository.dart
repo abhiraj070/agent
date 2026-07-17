@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/entities/person.dart';
-import 'seed_data.dart';
 
-/// Mirrors the mockup's `localStorage` key "aaraam-people".
+/// Local cache of "My People" — an offline fallback only. The backend
+/// (`GET /get-my-members`) is the source of truth; see PeopleController.
 class PeopleRepository {
   PeopleRepository(this._prefs);
 
@@ -14,7 +14,7 @@ class PeopleRepository {
 
   List<Person> load() {
     final raw = _prefs.getString(_key);
-    if (raw == null) return SeedData.initialPeople;
+    if (raw == null) return const [];
     final decoded = jsonDecode(raw) as List<dynamic>;
     return decoded
         .map((item) => Person.fromJson(item as Map<String, dynamic>))

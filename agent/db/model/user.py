@@ -41,6 +41,7 @@ class User(base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     phone_number= Column(String, nullable=False)
+    preferred_language= Column(String)
     members = relationship(
         "Member",
         secondary=UserMember.__table__,

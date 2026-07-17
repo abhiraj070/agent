@@ -19,6 +19,8 @@ class AppStageController extends StateNotifier<AppStage> {
   }
 
   void enterMain() => state = AppStage.main;
+
+  void enterOnboarding() => state = AppStage.onboarding;
 }
 
 final appStageControllerProvider =

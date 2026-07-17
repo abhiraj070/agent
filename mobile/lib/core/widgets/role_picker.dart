@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/local/seed_data.dart';
 import '../theme/app_colors.dart';
+import 'selectable_chip.dart';
 
 /// Ports `.role-first`/`.role-options`: a labelled card of 2-column radio
 /// chips for picking a person's role.
@@ -52,7 +53,7 @@ class RolePicker extends StatelessWidget {
             childAspectRatio: 3.2,
             children: SeedData.personRoles.map((role) {
               final selected = role == value;
-              return _RoleOption(
+              return SelectableChip(
                 label: role,
                 selected: selected,
                 onTap: () => onChanged(role),
@@ -60,66 +61,6 @@ class RolePicker extends StatelessWidget {
             }).toList(),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _RoleOption extends StatelessWidget {
-  const _RoleOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.green.withOpacity(0.1)
-              : const Color(0x80070C09),
-          border: Border.all(
-            color: selected
-                ? AppColors.green.withOpacity(0.38)
-                : Colors.white.withOpacity(0.075),
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? AppColors.ink : AppColors.muted,
-                fontSize: 9,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected ? AppColors.green : Colors.transparent,
-                border: Border.all(
-                  color: selected
-                      ? AppColors.green
-                      : Colors.white.withOpacity(0.16),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

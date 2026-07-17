@@ -10,8 +10,6 @@ async def process_recording(
         recording_sid: str = Form(..., alias="RecordingSid"),
         recording_status: str = Form(..., alias="RecordingStatus"),
         call_sid: str = Form(..., alias="CallSid"),
-        from_number: str = Form(..., alias="From"),
-        to_number: str = Form(..., alias="To"),
 ):
     if recording_status != "completed":
         print(f"recording not ready: {recording_sid} status={recording_status}")

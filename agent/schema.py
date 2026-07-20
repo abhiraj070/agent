@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-
+from datetime import datetime
 
 class UserReference(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -35,3 +35,13 @@ class MemberResponse(BaseModel):
     phone_number: str
     role: str
     preferred_language: str
+
+class ActivityResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    message: str
+    response: str
+    created_at: datetime
+
+class DeleteActivityRequest(BaseModel):
+    id: int

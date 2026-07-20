@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/local/seed_data.dart';
 import '../data/remote/api_exception.dart';
-import '../domain/entities/activity_item.dart';
 import '../domain/entities/person.dart';
-import 'activity_controller.dart';
 import 'app_stage_controller.dart';
 import 'providers.dart';
 
@@ -158,14 +156,20 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     goToStep(6);
   }
 
+  /// Lets the user bail out of onboarding early (from the add-person or
+  /// first-instruction steps) straight to the main screen. Marks onboarding
+  /// as done so they land on the home screen again next launch, rather than
+  /// being dropped back into this flow.
+  Future<void> skipToMain() async {
+    await _ref.read(onboardingRepositoryProvider).markOnboarded();
+    _ref.read(appStageControllerProvider.notifier).enterMain();
+  }
+
+  /// The onboarding "first instruction" step is a simulated success (see
+  /// [_startFirstTaskTimer]) — it never actually calls the backend, so
+  /// there's no real Activity record for it. Nothing to log here now that
+  /// Activity is backend-only.
   Future<void> completeOnboarding() async {
-    await _ref.read(activityControllerProvider.notifier).add(
-          ActivityItem(
-            time: 'Just now',
-            title: state.firstOutcome,
-            meta: 'First request',
-          ),
-        );
     await _ref.read(onboardingRepositoryProvider).markOnboarded();
     _ref.read(appStageControllerProvider.notifier).enterMain();
   }

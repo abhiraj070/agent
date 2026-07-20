@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SqlEnum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SqlEnum, UniqueConstraint, DateTime
 from sqlalchemy.orm import relationship
 from agent.db.connect import base
 from enum import Enum
+from datetime import datetime, timezone
 
 
 class Role(str, Enum):
@@ -46,4 +47,16 @@ class User(base):
         "Member",
         secondary=UserMember.__table__,
         back_populates="users"
+    )
+
+class Activity(base):
+    __tablename__= "activities"
+    id= Column(Integer, primary_key=True)
+    user_id= Column(Integer, ForeignKey("users.id"))
+    message= Column(String, nullable=False)
+    response= Column(String, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
     )

@@ -15,6 +15,7 @@ class FirstInstructionStep extends StatefulWidget {
     required this.instruction,
     required this.onInstructionChanged,
     required this.onSubmit,
+    required this.onBack,
     required this.onAddAnother,
   });
 
@@ -22,6 +23,7 @@ class FirstInstructionStep extends StatefulWidget {
   final String instruction;
   final ValueChanged<String> onInstructionChanged;
   final VoidCallback onSubmit;
+  final VoidCallback onBack;
   final VoidCallback onAddAnother;
 
   @override
@@ -42,6 +44,7 @@ class _FirstInstructionStepState extends State<FirstInstructionStep> {
   String get instruction => widget.instruction;
   ValueChanged<String> get onInstructionChanged => widget.onInstructionChanged;
   VoidCallback get onSubmit => widget.onSubmit;
+  VoidCallback get onBack => widget.onBack;
   VoidCallback get onAddAnother => widget.onAddAnother;
 
   @override
@@ -114,7 +117,15 @@ class _FirstInstructionStepState extends State<FirstInstructionStep> {
           ),
         ),
         const Spacer(),
-        PillButton(label: 'Take care of it', onPressed: onSubmit),
+        Row(
+          children: [
+            PillButton(label: 'Back', variant: PillButtonVariant.ghost, expand: false, onPressed: onBack),
+            const SizedBox(width: 9),
+            Expanded(
+              child: PillButton(label: 'Take care of it', onPressed: onSubmit),
+            ),
+          ],
+        ),
         Center(
           child: TextButton(
             onPressed: onAddAnother,

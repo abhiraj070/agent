@@ -128,7 +128,7 @@ class OnboardingScreen extends ConsumerWidget {
           hasExistingPending: state.pendingPeople.isNotEmpty,
           isSubmitting: state.isAddingPerson,
           errorMessage: state.addPersonError,
-          onBack: () => controller.goToStep(3),
+          onBack: controller.skipToMain,
           onSubmit: controller.submitFirstPerson,
         );
       case 5:
@@ -141,6 +141,7 @@ class OnboardingScreen extends ConsumerWidget {
           instruction: state.firstInstruction,
           onInstructionChanged: controller.updateFirstInstruction,
           onSubmit: controller.submitFirstInstruction,
+          onBack: controller.skipToMain,
           onAddAnother: () => controller.goToStep(4),
         );
       case 6:

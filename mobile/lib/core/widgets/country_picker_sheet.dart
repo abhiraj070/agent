@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../data/local/country_codes.dart';
-import '../../../domain/entities/country.dart';
+import '../theme/app_colors.dart';
+import '../../data/local/country_codes.dart';
+import '../../domain/entities/country.dart';
 
-/// Searchable country/dial-code list opened from [PhoneEntryStep]'s
-/// country chip.
+/// Searchable country/dial-code list — shared by every phone-entry field
+/// that composes a number as dial code + local digits (account setup's
+/// [PhoneEntryStep] and [PhoneField]).
 class CountryPickerSheet extends StatefulWidget {
   const CountryPickerSheet({super.key, required this.onSelect});
 

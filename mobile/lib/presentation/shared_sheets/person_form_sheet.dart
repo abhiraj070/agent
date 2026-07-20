@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../core/widgets/phone_field.dart';
 import '../../core/widgets/pill_button.dart';
 import '../../core/widgets/role_picker.dart';
+import '../../data/local/country_codes.dart';
 import '../../data/local/seed_data.dart';
 import '../../data/remote/api_exception.dart';
+import '../../domain/entities/country.dart';
 
 typedef PersonFormSubmit = Future<void> Function({
   required String name,
@@ -39,6 +42,7 @@ class _PersonFormSheetState extends State<PersonFormSheet> {
   final _noteController = TextEditingController();
   String _role = SeedData.personRoles.first;
   String _language = SeedData.languages.first;
+  Country _country = CountryCodes.defaultCountry;
   bool _isSubmitting = false;
   String? _error;
 
@@ -61,7 +65,7 @@ class _PersonFormSheetState extends State<PersonFormSheet> {
       await widget.onSubmit(
         name: _nameController.text,
         role: _role,
-        phone: _phoneController.text,
+        phone: '${_country.dialCode}${_phoneController.text}',
         language: _language,
         note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
       );
@@ -110,12 +114,10 @@ class _PersonFormSheetState extends State<PersonFormSheet> {
             options: SeedData.languages,
             onChanged: (v) => setState(() => _language = v),
           ),
-          AppTextField(
-            label: 'Phone number',
+          PhoneField(
+            country: _country,
             controller: _phoneController,
-            hintText: '+91 98765 43210',
-            keyboardType: TextInputType.phone,
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+            onCountryChanged: (c) => setState(() => _country = c),
           ),
           AppTextField(
             label: 'Optional note',

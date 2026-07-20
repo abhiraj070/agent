@@ -5,9 +5,9 @@ import '../../../application/account_setup_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/bottom_sheet_shell.dart';
+import '../../../core/widgets/country_picker_sheet.dart';
 import '../../../core/widgets/mini_step_dots.dart';
 import '../../../core/widgets/pill_button.dart';
-import 'country_picker_sheet.dart';
 
 /// First part of the account-setup sub-flow — phone number + country.
 class PhoneEntryStep extends ConsumerWidget {

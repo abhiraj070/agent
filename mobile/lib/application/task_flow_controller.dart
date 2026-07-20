@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/local/audio_recorder.dart';
 import '../data/remote/api_exception.dart';
-import '../domain/entities/activity_item.dart';
 import '../domain/entities/task_phase.dart';
 import 'account_setup_controller.dart';
 import 'activity_controller.dart';
@@ -197,11 +196,13 @@ class TaskFlowController extends StateNotifier<TaskFlowState> {
     }
   }
 
+  /// The backend already wrote this task to the `Activity` table as a
+  /// side effect of the call that just resolved — this only refreshes the
+  /// Activity list from there so it's ready by the time the user checks
+  /// it, rather than relying on the list's own fetch-on-open.
   void _finishTask(String message) {
     state = state.copyWith(result: message, phase: TaskPhase.complete);
-    _ref.read(activityControllerProvider.notifier).add(
-          ActivityItem(time: 'Just now', title: message, meta: 'Handled by Aaraam'),
-        );
+    _ref.read(activityControllerProvider.notifier).refresh();
   }
 
   void toggleDetail() {

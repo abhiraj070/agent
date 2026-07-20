@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/activity_controller.dart';
+import '../../application/screen_controller.dart';
 import '../../application/task_flow_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/date_format.dart';
+import '../../core/widgets/activity_link_card.dart';
 import '../../core/widgets/bottom_sheet_shell.dart';
 import '../../core/widgets/pill_button.dart';
+import '../../domain/entities/activity_item.dart';
 import '../../domain/entities/task_phase.dart';
 import '../shared_sheets/composer_sheet.dart';
 import 'widgets/execution_view.dart';
@@ -33,10 +38,25 @@ class HomeScreen extends ConsumerWidget {
     }
   }
 
+  /// Finds this outcome's real `Activity` record (backend-created the
+  /// moment the task completed — see `TaskFlowController._finishTask`) so
+  /// the "Completed" detail stat can show a real timestamp instead of a
+  /// hardcoded one. Matches on the response text since [TaskFlowState]
+  /// has no id linking it to a specific `Activity` row; if more than one
+  /// record shares that text, the most recently created one wins.
+  ActivityItem? _matchingActivity(List<ActivityItem> activity, String result) {
+    final matches = activity.where((a) => a.response == result);
+    if (matches.isEmpty) return null;
+    return matches.reduce((a, b) => a.createdAt.isAfter(b.createdAt) ? a : b);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final flow = ref.watch(taskFlowControllerProvider);
     final controller = ref.read(taskFlowControllerProvider.notifier);
+    final activity = ref.watch(activityControllerProvider);
+    final completedActivity =
+        flow.phase == TaskPhase.complete ? _matchingActivity(activity, flow.result) : null;
 
     final activeChore = flow.phase == TaskPhase.working || flow.phase == TaskPhase.planning;
     final subline = flow.errorMessage.isNotEmpty
@@ -88,6 +108,10 @@ class HomeScreen extends ConsumerWidget {
                 style: TextStyle(color: AppColors.faint, fontSize: 11),
               ),
             ),
+            const SizedBox(height: 20),
+            ActivityLinkCard(
+              onTap: () => ref.read(currentScreenProvider.notifier).state = AppScreen.activity,
+            ),
           ] else if (flow.phase == TaskPhase.listening)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -119,7 +143,12 @@ class HomeScreen extends ConsumerWidget {
                 decoration: const BoxDecoration(
                   border: Border(top: BorderSide(color: AppColors.line)),
                 ),
-                child: const _DetailStat(label: 'Completed', value: 'Just now'),
+                child: _DetailStat(
+                  label: 'Completed',
+                  value: completedActivity != null
+                      ? formatActivityTimestamp(completedActivity.createdAt)
+                      : '—',
+                ),
               ),
               const SizedBox(height: 6),
               const Text(

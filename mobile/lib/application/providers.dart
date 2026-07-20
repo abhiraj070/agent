@@ -11,6 +11,7 @@ import '../data/local/secure_token_storage.dart';
 import '../data/remote/api_client.dart';
 import '../data/remote/audio_repository.dart';
 import '../data/remote/auth_repository.dart';
+import '../data/remote/call_repository.dart';
 import '../data/remote/chat_repository.dart';
 import '../data/remote/member_repository.dart';
 import '../data/remote/user_repository.dart';
@@ -69,4 +70,8 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 
 final audioRepositoryProvider = Provider<AudioRepository>((ref) {
   return AudioRepository(ref.watch(dioProvider));
+});
+
+final callRepositoryProvider = Provider<CallRepository>((ref) {
+  return CallRepository(ref.watch(dioProvider));
 });

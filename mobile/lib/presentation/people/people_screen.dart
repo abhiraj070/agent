@@ -10,8 +10,9 @@ import '../../core/widgets/bottom_sheet_shell.dart';
 import '../shared_sheets/person_form_sheet.dart';
 import 'widgets/person_row.dart';
 
-/// Ports the `people-screen` subscreen: "My People" list, add-person entry
-/// point, and a link through to Activity.
+/// Ports the `people-screen` subscreen: "My People" list and add-person
+/// entry point. The Activity link lives on the Home screen instead — see
+/// HomeScreen.
 class PeopleScreen extends ConsumerWidget {
   const PeopleScreen({super.key});
 
@@ -98,40 +99,6 @@ class PeopleScreen extends ConsumerWidget {
               person: person,
               onTap: () => AppToast.show(context, '${person.name} · ${person.language}'),
             ),
-          const SizedBox(height: 26),
-          InkWell(
-            onTap: () => ref.read(currentScreenProvider.notifier).state = AppScreen.activity,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.025),
-                border: Border.all(color: AppColors.line),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  const Text('⌁', style: TextStyle(color: AppColors.green, fontSize: 16)),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Activity', style: TextStyle(color: AppColors.ink, fontSize: 12)),
-                        SizedBox(height: 4),
-                        Text(
-                          'Minimal outcomes, nothing more',
-                          style: TextStyle(color: AppColors.muted, fontSize: 9),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Text('›', style: TextStyle(color: AppColors.faint, fontSize: 16)),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );

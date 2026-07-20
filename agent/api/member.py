@@ -85,7 +85,7 @@ def normalize_role(role: str) -> Role:
 @app.post("/add_members")
 def add_members(
         body: AddMemberRequest,
-        user_id: Annotated[str, Depends(get_current_user)],
+        user_id: Annotated[int, Depends(get_current_user)],
         db: Session = Depends(get_db),
 ) -> dict[str, int | str]:
     user = db.get(User, int(user_id))

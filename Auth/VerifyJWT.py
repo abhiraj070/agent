@@ -72,11 +72,11 @@ def get_current_user(
     response: Response,
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
-) -> str:
+) -> int:
     try:
         payload = decode_token(token)
         user = get_user(payload, db, expected_token_type="access")
-        return str(user.id)
+        return user.id
     except ExpiredSignatureError:
         refresh_token = get_refresh_token(request)
         if refresh_token is None:
@@ -93,6 +93,6 @@ def get_current_user(
         access_token = create_access_token(str(user.id))
         response.headers["X-Access-Token"] = access_token
         response.headers["Authorization"] = f"Bearer {access_token}"
-        return str(user.id)
+        return user.id
     except JWTError as exc:
         raise credentials_exception() from exc

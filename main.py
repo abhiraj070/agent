@@ -3,11 +3,11 @@ from fastapi.staticfiles import StaticFiles
 app= FastAPI()
 
 app.mount("/audio", StaticFiles(directory="audio"), name="audio")
-import agent.api.chat
-import agent.tools
-import agent.api.websocket
-import agent.api.rec
-import agent.api.member
-import agent.api.start
-import agent.api.status
-import agent.api.user
+import server.agent.api.chat
+import server.agent.tools
+import server.agent.api.websocket
+import server.agent.api.rec
+import server.agent.api.member
+import server.agent.api.start
+import server.agent.api.status
+import server.agent.api.user

@@ -1,4 +1,4 @@
-from agent.config.settings import get_settings
+from server.agent.config.settings import get_settings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 

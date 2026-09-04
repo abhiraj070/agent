@@ -2,12 +2,12 @@ from main import app
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from agent.db.connect import get_db
-from agent.db.model.user import User, Activity
-from Auth.VerifyJWT import get_current_user
-from agent.schema import MemberResponse
+from server.agent.db.connect import get_db
+from server.agent.db.model.user import User, Activity
+from server.Auth.VerifyJWT import get_current_user
+from server.agent.schema import MemberResponse
 from typing import Annotated
-from agent.schema import ActivityResponse, DeleteActivityRequest
+from server.agent.schema import ActivityResponse, DeleteActivityRequest
 
 @app.patch("/add-language")
 def add_language(userId: int= Depends(get_current_user), language: str = "en", db: Session = Depends(get_db)):

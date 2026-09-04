@@ -3,10 +3,10 @@ import datetime
 from twilio.base.exceptions import TwilioRestException
 from main import app
 from fastapi import Depends, Form, HTTPException
-from agent.db.model.user import User
-from agent.db.connect import get_db
+from server.agent.db.model.user import User
+from server.agent.db.connect import get_db
 from jose import jwt
-from agent.config.settings import get_settings
+from server.agent.config.settings import get_settings
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from twilio.rest import Client

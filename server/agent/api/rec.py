@@ -1,7 +1,7 @@
 from main import app
 from fastapi import BackgroundTasks, Form
 from fastapi.responses import Response
-from utils.download_audio import download_and_transcribe
+from server.utils.download_audio import download_and_transcribe
 
 @app.post("/process_recording")
 async def process_recording(

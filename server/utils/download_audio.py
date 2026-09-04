@@ -4,8 +4,8 @@ from pathlib import Path
 import httpx
 from fastapi import UploadFile
 
-from agent.call_state import get_call_connection
-from agent.config.settings import get_settings
+from server.agent.call_state import get_call_connection
+from server.agent.config.settings import get_settings
 
 
 RECORDINGS_DIR = Path("recordings")

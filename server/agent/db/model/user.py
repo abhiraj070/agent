@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SqlEnum, UniqueConstraint, DateTime
 from sqlalchemy.orm import relationship
-from agent.db.connect import base
+from server.agent.db.connect import base
 from enum import Enum
 from datetime import datetime, timezone
 

@@ -6,9 +6,9 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 from sqlalchemy.orm import Session
 
-from agent.config.settings import get_settings
-from agent.db.connect import get_db
-from agent.db.model.user import User
+from server.agent.config.settings import get_settings
+from server.agent.db.connect import get_db
+from server.agent.db.model.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="start")
 ALGORITHM = "HS256"

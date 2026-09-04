@@ -1,11 +1,11 @@
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIResponsesModel
 from pydantic_ai.providers.openai import OpenAIProvider
-from agent.config.settings import get_settings
+from server.agent.config.settings import get_settings
 #from pydantic_ai.providers.ollama import OllamaProvider
 #from pydantic_ai.models.ollama import OllamaModel
 from pydantic_ai.settings import ModelSettings
-from agent.deps import CallAiDeps
+from server.agent.deps import CallAiDeps
 
 _settings= get_settings()
 model = OpenAIResponsesModel(

@@ -1,9 +1,9 @@
 from fastapi import Depends, HTTPException, status
-from Auth.VerifyJWT import get_current_user
+from server.Auth.VerifyJWT import get_current_user
 from main import app
-from agent.db.model.user import Member, Role, User
-from agent.db.connect import get_db
-from agent.schema import AddMemberRequest
+from server.agent.db.model.user import Member, Role, User
+from server.agent.db.connect import get_db
+from server.agent.schema import AddMemberRequest
 from typing import Annotated
 from sqlalchemy import select
 from sqlalchemy.orm import Session

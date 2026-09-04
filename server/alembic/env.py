@@ -3,9 +3,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from agent.config.settings import get_settings
-from agent.db.connect import base
-from agent.db.model import user  # noqa: F401 -- registers User metadata
+from server.agent.config.settings import get_settings
+from server.agent.db.connect import base
+from server.agent.db.model import user  # noqa: F401 -- registers User metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,7 +1,7 @@
 from main import app
 from fastapi import Form
 from fastapi.responses import Response
-from agent.call_state import get_call_connection
+from server.agent.call_state import get_call_connection
 
 
 @app.post("/call-status")

@@ -13,3 +13,7 @@ wheels/
 .idea/
 recordings
 audio
+
+CLAUDE.md
+.DS_Store
+.claude

@@ -1,13 +1,13 @@
 from fastapi import Depends, HTTPException, status, UploadFile, File, Form
-from Auth.VerifyJWT import get_current_user
-from agent.schema import ChatRequest, ChatResponse
+from server.Auth.VerifyJWT import get_current_user
+from server.agent.schema import ChatRequest, ChatResponse
 from main import app
-from agent.db.connect import get_db
-from agent.db.model.user import User, Activity
+from server.agent.db.connect import get_db
+from server.agent.db.model.user import User, Activity
 from typing import Annotated
 from sqlalchemy.orm import Session
-from agent.run_agent import run_agent
-from utils.download_audio import transcribe_audio_file
+from server.agent.run_agent import run_agent
+from server.utils.download_audio import transcribe_audio_file
 
 @app.post("/recieve-message", response_model=ChatResponse)
 async def chat(

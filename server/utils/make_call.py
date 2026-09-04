@@ -1,9 +1,9 @@
 import os
 
-from utils.generate_audio import generate_audio
+from server.utils.generate_audio import generate_audio
 from twilio.base.exceptions import TwilioRestException
-from utils.twilio_client import client
-from agent.config.settings import get_settings
+from server.utils.twilio_client import client
+from server.agent.config.settings import get_settings
 
 def make_call(message: str, to_number: str, from_number: str) -> str:
     """Start the outbound call without waiting for a generated audio file.

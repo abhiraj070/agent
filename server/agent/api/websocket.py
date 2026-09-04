@@ -3,9 +3,9 @@ import uuid
 
 from main import app
 from fastapi import WebSocket, WebSocketDisconnect
-from utils.make_call import make_call
-from agent.schema import WsMessageRequest
-from agent.call_state import register_call, register_ws_connection, remove_ws_connection
+from server.utils.make_call import make_call
+from server.agent.schema import WsMessageRequest
+from server.agent.call_state import register_call, register_ws_connection, remove_ws_connection
 
 
 async def schedule_callback(validated_data: WsMessageRequest, websocket: WebSocket) -> None:

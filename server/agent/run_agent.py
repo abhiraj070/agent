@@ -1,5 +1,5 @@
-from agent.orchestrator import call_agent
-from agent.deps import CallAiDeps
+from server.agent.orchestrator import call_agent
+from server.agent.deps import CallAiDeps
 
 
 async def run_agent(members, phone_number, connection_id, message):

@@ -181,6 +181,21 @@ ACCESS_TOKEN_EXPIRE_MINUTES=
 
 ## Running Locally
 
+### Makefile Shortcuts
+
+From the repository root:
+
+```bash
+make web-install
+make web
+
+make backend-install
+make backend
+
+```
+
+The web app and backend commands are intended to run in separate terminals.
+
 ### Backend
 
 ```bash

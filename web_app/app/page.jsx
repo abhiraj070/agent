@@ -1,37 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FormEvent } from "react";
-
-type Screen = "home" | "people" | "activity";
-type Phase = "idle" | "listening" | "planning" | "working" | "complete";
-type NodeState = "Preparing" | "Calling" | "Waiting" | "Done" | "Needs you";
-
-type Person = {
-  id: number;
-  name: string;
-  role: string;
-  phone: string;
-  language: string;
-  note?: string;
-  initials: string;
-};
-
-type TaskNode = {
-  id: string;
-  person: string;
-  action: string;
-  state: NodeState;
-};
-
-const initialPeople: Person[] = [
-  { id: 1, name: "Anil ji", role: "Driver", phone: "+91 98••• 2201", language: "Hindi", note: "Usually near the main gate", initials: "AJ" },
-  { id: 2, name: "Bhim", role: "Cook", phone: "+91 99••• 1842", language: "Hindi", note: "Dinner shift", initials: "BH" },
-  { id: 3, name: "Amrita", role: "Nanny", phone: "+91 97••• 4310", language: "English", note: "With Tara on weekdays", initials: "AM" },
-  { id: 4, name: "Shanti", role: "Househelp", phone: "+91 96••• 9084", language: "Hindi", initials: "SH" },
-  { id: 5, name: "Fresh Basket", role: "Grocery", phone: "+91 11••• 7820", language: "Hinglish", note: "Society market", initials: "FB" },
-  { id: 6, name: "Maintenance", role: "Society office", phone: "+91 11••• 1108", language: "English", initials: "MO" },
-];
 
 const activitySeed = [
   { time: "8:42 am", title: "Anil ji will meet you at Gate 2.", meta: "1 call · 38 sec" },
@@ -39,7 +8,7 @@ const activitySeed = [
   { time: "Yesterday", title: "Dinner coordinated for 8 pm.", meta: "4 calls · 7 min" },
 ];
 
-const paneerNodes: TaskNode[] = [
+const paneerNodes = [
   { id: "amrita", person: "Amrita", action: "Check what’s at home", state: "Calling" },
   { id: "grocery", person: "Fresh Basket", action: "Order what’s missing", state: "Waiting" },
   { id: "bhim", person: "Bhim", action: "Cook paneer butter masala", state: "Waiting" },
@@ -55,7 +24,7 @@ const onboardingExamples = [
 
 const personRoles = ["Driver", "Cook", "Nanny", "Househelp", "Dog walker", "Vendor", "Society office", "Other"];
 
-function RolePicker({ autoFocus = false }: { autoFocus?: boolean }) {
+function RolePicker({ autoFocus = false }) {
   return (
     <fieldset className="role-first">
       <legend><small>First, choose their role</small>Who are they to you?</legend>
@@ -71,16 +40,12 @@ function RolePicker({ autoFocus = false }: { autoFocus?: boolean }) {
   );
 }
 
-function stateClass(state: NodeState) {
+function stateClass(state) {
   return state.toLowerCase().replace(" ", "-");
 }
 
-function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step: number) => void; onComplete: (people: Person[], outcome: string) => void }) {
+function Onboarding({ step, onStep, onComplete }) {
   const [exampleIndex, setExampleIndex] = useState(0);
-  const [pendingPeople, setPendingPeople] = useState<Person[]>([]);
-  const [activePerson, setActivePerson] = useState<Person | null>(null);
-  const [firstInstruction, setFirstInstruction] = useState("");
-  const [firstTaskDone, setFirstTaskDone] = useState(false);
   const example = onboardingExamples[exampleIndex];
 
   useEffect(() => {
@@ -90,14 +55,7 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
     return () => window.clearInterval(interval);
   }, [step]);
 
-  useEffect(() => {
-    if (step !== 5) return;
-    setFirstTaskDone(false);
-    const timer = window.setTimeout(() => setFirstTaskDone(true), 2400);
-    return () => window.clearTimeout(timer);
-  }, [step]);
-
-  function submitFirstPerson(event: FormEvent<HTMLFormElement>) {
+  function submitFirstPerson(event) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const name = String(data.get("name") || "My person");
@@ -110,19 +68,8 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
       note: "Added during first setup",
       initials: name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
     };
-    setPendingPeople((current) => [...current, person]);
-    setActivePerson(person);
-    setFirstInstruction("");
-    onStep(4);
+    onComplete([person], "Your first person is ready.");
   }
-
-  function submitFirstInstruction(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!firstInstruction.trim()) return;
-    onStep(5);
-  }
-
-  const firstOutcome = activePerson ? `${activePerson.name} confirmed your request.` : "Your request was confirmed.";
 
   return (
     <main className="stage">
@@ -131,7 +78,7 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
         <div className="status-bar" aria-hidden="true"><span>9:41</span><span className="status-icons">● ◒</span></div>
         <header className="onboarding-top">
           <span className="onboarding-brand"><span className="brand-mark">अ</span><span>Aaraam</span></span>
-          <div className="onboarding-progress" aria-label={`Step ${step + 1} of 6`}>{[0, 1, 2, 3, 4, 5].map((item) => <i key={item} className={item === step ? "active" : item < step ? "passed" : ""} />)}</div>
+          <div className="onboarding-progress" aria-label={`Step ${step + 1} of 4`}>{[0, 1, 2, 3].map((item) => <i key={item} className={item === step ? "active" : item < step ? "passed" : ""} />)}</div>
         </header>
 
         <div className="onboarding-page" key={step}>
@@ -194,9 +141,9 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
           {step === 3 && (
             <form className="onboarding-person" onSubmit={submitFirstPerson}>
               <div className="onboarding-copy">
-                <p className="eyebrow">{pendingPeople.length ? "Add another person" : "Your trusted circle begins"}</p>
-                <h1>{pendingPeople.length ? "Who else should\nAaraam know?" : "Who helps make\nlife easier?"}</h1>
-                <p>{pendingPeople.length ? "Add the next person you often need to reach." : "Start with the role you rely on most."}</p>
+                <p className="eyebrow">Your trusted circle begins</p>
+                <h1>Who helps make<br />life easier?</h1>
+                <p>Start with the role you rely on most.</p>
               </div>
               <div className="onboarding-fields">
                 <RolePicker autoFocus />
@@ -208,41 +155,6 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
             </form>
           )}
 
-          {step === 4 && activePerson && (
-            <form className="onboarding-instruction" onSubmit={submitFirstInstruction}>
-              <div className="onboarding-copy">
-                <p className="eyebrow">Your first hand-off</p>
-                <h1>Give your first<br />instruction for {activePerson.name}.</h1>
-                <p>Say it naturally. Aaraam will handle the call and bring back what matters.</p>
-              </div>
-              <div className="first-instruction-card">
-                <span className="first-person"><span className="person-avatar">{activePerson.initials}</span><span><small>{activePerson.role}</small><strong>{activePerson.name}</strong></span></span>
-                <textarea aria-label={`Instruction for ${activePerson.name}`} autoFocus value={firstInstruction} onChange={(event) => setFirstInstruction(event.target.value)} placeholder={`Ask ${activePerson.name} to…`} required />
-                <span className="instruction-hint"><i /><i /><i /> Speak or type—however it comes to mind</span>
-              </div>
-              <div className="onboarding-actions">
-                <button className="onboarding-primary" type="submit">Take care of it</button>
-                <button className="onboarding-secondary-link" type="button" onClick={() => onStep(3)}>Add another contact or person instead</button>
-              </div>
-            </form>
-          )}
-
-          {step === 5 && activePerson && (
-            <div className={`onboarding-first-result ${firstTaskDone ? "is-done" : "is-working"}`}>
-              <div className="first-task-visual" aria-hidden="true">
-                <span className="first-task-glow" /><span className="first-task-ring ring-one" /><span className="first-task-ring ring-two" />
-                <span className="first-task-core">{firstTaskDone ? "✓" : activePerson.initials}</span>
-              </div>
-              <div className="onboarding-copy centered-copy">
-                <p className="eyebrow">{firstTaskDone ? "First task complete" : `Reaching ${activePerson.name}`}</p>
-                <h1>{firstTaskDone ? <>It’s done.<br />Just like that.</> : <>You can let<br />this one go.</>}</h1>
-                <p>{firstTaskDone ? firstOutcome : `Aaraam is taking care of “${firstInstruction}”`}</p>
-              </div>
-              {firstTaskDone ? (
-                <div className="onboarding-actions"><button className="onboarding-primary" onClick={() => onComplete(pendingPeople, firstOutcome)}>Now keep using Aaraam</button><small>Your people and this outcome stay on this device.</small></div>
-              ) : <div className="first-task-status"><span /> Calling in {activePerson.language}</div>}
-            </div>
-          )}
         </div>
         <div className="home-indicator" aria-hidden="true" />
       </section>
@@ -251,14 +163,14 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
 }
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>("home");
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [screen, setScreen] = useState("home");
+  const [phase, setPhase] = useState("idle");
   const [transcript, setTranscript] = useState("");
-  const [nodes, setNodes] = useState<TaskNode[]>([]);
+  const [nodes, setNodes] = useState([]);
   const [result, setResult] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [people, setPeople] = useState<Person[]>(initialPeople);
+  const [people, setPeople] = useState([]);
   const [personSheet, setPersonSheet] = useState(false);
   const [missingName, setMissingName] = useState("");
   const [clarification, setClarification] = useState("");
@@ -267,8 +179,8 @@ export default function Home() {
   const [assistantReply, setAssistantReply] = useState("");
   const [resultSource, setResultSource] = useState("Outcome");
   const [activity, setActivity] = useState(activitySeed);
-  const [onboardingStep, setOnboardingStep] = useState<number | null>(null);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [onboardingStep, setOnboardingStep] = useState(null);
+  const timers = useRef([]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("aaraam-people");
@@ -290,12 +202,12 @@ export default function Home() {
     return "What can I take care of?";
   }, [phase]);
 
-  function later(fn: () => void, delay: number) {
+  function later(fn, delay) {
     const timer = setTimeout(fn, delay);
     timers.current.push(timer);
   }
 
-  function finishTask(message: string, source: string, meta: string) {
+  function finishTask(message, source, meta) {
     setResult(message);
     setResultSource(source);
     setPhase("complete");
@@ -329,7 +241,7 @@ export default function Home() {
     later(() => runTask("paneer"), 3100);
   }
 
-  function runTask(kind: "paneer" | "driver" | "shanti" | "generic", customText?: string) {
+  function runTask(kind, customText) {
     const text = customText || transcript;
     setComposerOpen(false);
     setClarification("");
@@ -390,7 +302,7 @@ export default function Home() {
           { ...paneerNodes[3], state: "Calling" },
         ]), 5900);
         later(() => {
-          setNodes(paneerNodes.map((node) => ({ ...node, state: "Done" as NodeState })));
+          setNodes(paneerNodes.map((node) => ({ ...node, state: "Done" })));
           const finalReply = "Dinner coordinated for 8 pm.";
           finishTask(finalReply, "Household outcome", "4 calls · 7 min");
         }, 7600);
@@ -406,7 +318,7 @@ export default function Home() {
     }, 650);
   }
 
-  function submitText(event: FormEvent) {
+  function submitText(event) {
     event.preventDefault();
     if (!draft.trim()) return;
     const lowered = draft.toLowerCase();
@@ -415,11 +327,11 @@ export default function Home() {
     setDraft("");
   }
 
-  function savePerson(event: FormEvent<HTMLFormElement>) {
+  function savePerson(event) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const name = String(data.get("name") || missingName || "New person");
-    const person: Person = {
+    const person = {
       id: Date.now(), name, role: String(data.get("role") || "Other"),
       phone: String(data.get("phone") || "+91"), language: String(data.get("language") || "Hindi"),
       note: String(data.get("note") || ""), initials: name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
@@ -433,8 +345,8 @@ export default function Home() {
     later(() => setToast(""), 2600);
   }
 
-  function completeOnboarding(newPeople: Person[], outcome: string) {
-    const updated = newPeople.reduce<Person[]>((current, person) => {
+  function completeOnboarding(newPeople, outcome) {
+    const updated = newPeople.reduce((current, person) => {
       const exists = current.some((item) => item.name.toLowerCase() === person.name.toLowerCase());
       return exists ? current : [...current, person];
     }, people);
@@ -442,7 +354,7 @@ export default function Home() {
     window.localStorage.setItem("aaraam-people", JSON.stringify(updated));
     const firstActivity = { time: "Just now", title: outcome, meta: "First request" };
     setActivity((current) => {
-      const next = [firstActivity, ...current].slice(0, 12);
+      const next = [firstActivity, ...current.filter((item) => item.title !== outcome)].slice(0, 12);
       window.localStorage.setItem("aaraam-activity", JSON.stringify(next));
       return next;
     });
@@ -472,7 +384,10 @@ export default function Home() {
             <span className="brand-mark">अ</span><span>Aaraam</span>
           </button>
           <button className="people-button" onClick={() => setScreen("people")} aria-label="Open My People">
-            <span className="avatar-stack" aria-hidden="true"><span>AJ</span><span>AM</span><span>+{Math.max(0, people.length - 2)}</span></span>
+            <span className="avatar-stack" aria-hidden="true">
+              {people.slice(0, 2).map((person) => <span key={person.id}>{person.initials}</span>)}
+              {people.length > 2 && <span>+{people.length - 2}</span>}
+            </span>
           </button>
         </header>
 
@@ -600,7 +515,7 @@ export default function Home() {
         {screen === "activity" && (
           <div className="subscreen activity-screen">
             <div className="screen-heading"><button className="back" onClick={() => setScreen("people")} aria-label="Back">‹</button><div><p className="eyebrow">Quiet history</p><h1>Activity</h1></div></div>
-            <div className="activity-list">{activity.map((item) => <article className="activity-row" key={`${item.time}-${item.title}`}><span className="activity-check">✓</span><div><time>{item.time}</time><h2>{item.title}</h2><p>{item.meta}</p></div></article>)}</div>
+            <div className="activity-list">{activity.map((item, index) => <article className="activity-row" key={`${item.time}-${item.title}-${index}`}><span className="activity-check">✓</span><div><time>{item.time}</time><h2>{item.title}</h2><p>{item.meta}</p></div></article>)}</div>
             <p className="retention-copy">No recordings. No transcripts. Just enough to remember what was handled.</p>
           </div>
         )}

@@ -1,30 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FormEvent } from "react";
 
-type Screen = "home" | "people" | "activity";
-type Phase = "idle" | "listening" | "planning" | "working" | "complete";
-type NodeState = "Preparing" | "Calling" | "Waiting" | "Done" | "Needs you";
-
-type Person = {
-  id: number;
-  name: string;
-  role: string;
-  phone: string;
-  language: string;
-  note?: string;
-  initials: string;
-};
-
-type TaskNode = {
-  id: string;
-  person: string;
-  action: string;
-  state: NodeState;
-};
-
-const initialPeople: Person[] = [
+const initialPeople = [
   { id: 1, name: "Anil ji", role: "Driver", phone: "+91 98••• 2201", language: "Hindi", note: "Usually near the main gate", initials: "AJ" },
   { id: 2, name: "Bhim", role: "Cook", phone: "+91 99••• 1842", language: "Hindi", note: "Dinner shift", initials: "BH" },
   { id: 3, name: "Amrita", role: "Nanny", phone: "+91 97••• 4310", language: "English", note: "With Tara on weekdays", initials: "AM" },
@@ -39,7 +17,7 @@ const activitySeed = [
   { time: "Yesterday", title: "Dinner coordinated for 8 pm.", meta: "4 calls · 7 min" },
 ];
 
-const paneerNodes: TaskNode[] = [
+const paneerNodes = [
   { id: "amrita", person: "Amrita", action: "Check what’s at home", state: "Calling" },
   { id: "grocery", person: "Fresh Basket", action: "Order what’s missing", state: "Waiting" },
   { id: "bhim", person: "Bhim", action: "Cook paneer butter masala", state: "Waiting" },
@@ -55,7 +33,7 @@ const onboardingExamples = [
 
 const personRoles = ["Driver", "Cook", "Nanny", "Househelp", "Dog walker", "Vendor", "Society office", "Other"];
 
-function RolePicker({ autoFocus = false }: { autoFocus?: boolean }) {
+function RolePicker({ autoFocus = false }) {
   return (
     <fieldset className="role-first">
       <legend><small>First, choose their role</small>Who are they to you?</legend>
@@ -71,14 +49,14 @@ function RolePicker({ autoFocus = false }: { autoFocus?: boolean }) {
   );
 }
 
-function stateClass(state: NodeState) {
+function stateClass(state) {
   return state.toLowerCase().replace(" ", "-");
 }
 
-function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step: number) => void; onComplete: (people: Person[], outcome: string) => void }) {
+function Onboarding({ step, onStep, onComplete }) {
   const [exampleIndex, setExampleIndex] = useState(0);
-  const [pendingPeople, setPendingPeople] = useState<Person[]>([]);
-  const [activePerson, setActivePerson] = useState<Person | null>(null);
+  const [pendingPeople, setPendingPeople] = useState([]);
+  const [activePerson, setActivePerson] = useState(null);
   const [firstInstruction, setFirstInstruction] = useState("");
   const [firstTaskDone, setFirstTaskDone] = useState(false);
   const example = onboardingExamples[exampleIndex];
@@ -97,7 +75,7 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
     return () => window.clearTimeout(timer);
   }, [step]);
 
-  function submitFirstPerson(event: FormEvent<HTMLFormElement>) {
+  function submitFirstPerson(event) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const name = String(data.get("name") || "My person");
@@ -116,7 +94,7 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
     onStep(4);
   }
 
-  function submitFirstInstruction(event: FormEvent<HTMLFormElement>) {
+  function submitFirstInstruction(event) {
     event.preventDefault();
     if (!firstInstruction.trim()) return;
     onStep(5);
@@ -251,14 +229,14 @@ function Onboarding({ step, onStep, onComplete }: { step: number; onStep: (step:
 }
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>("home");
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [screen, setScreen] = useState("home");
+  const [phase, setPhase] = useState("idle");
   const [transcript, setTranscript] = useState("");
-  const [nodes, setNodes] = useState<TaskNode[]>([]);
+  const [nodes, setNodes] = useState([]);
   const [result, setResult] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [people, setPeople] = useState<Person[]>(initialPeople);
+  const [people, setPeople] = useState(initialPeople);
   const [personSheet, setPersonSheet] = useState(false);
   const [missingName, setMissingName] = useState("");
   const [clarification, setClarification] = useState("");
@@ -267,8 +245,8 @@ export default function Home() {
   const [assistantReply, setAssistantReply] = useState("");
   const [resultSource, setResultSource] = useState("Outcome");
   const [activity, setActivity] = useState(activitySeed);
-  const [onboardingStep, setOnboardingStep] = useState<number | null>(null);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [onboardingStep, setOnboardingStep] = useState(null);
+  const timers = useRef([]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("aaraam-people");
@@ -290,12 +268,12 @@ export default function Home() {
     return "What can I take care of?";
   }, [phase]);
 
-  function later(fn: () => void, delay: number) {
+  function later(fn, delay) {
     const timer = setTimeout(fn, delay);
     timers.current.push(timer);
   }
 
-  function finishTask(message: string, source: string, meta: string) {
+  function finishTask(message, source, meta) {
     setResult(message);
     setResultSource(source);
     setPhase("complete");
@@ -329,7 +307,7 @@ export default function Home() {
     later(() => runTask("paneer"), 3100);
   }
 
-  function runTask(kind: "paneer" | "driver" | "shanti" | "generic", customText?: string) {
+  function runTask(kind, customText) {
     const text = customText || transcript;
     setComposerOpen(false);
     setClarification("");
@@ -390,7 +368,7 @@ export default function Home() {
           { ...paneerNodes[3], state: "Calling" },
         ]), 5900);
         later(() => {
-          setNodes(paneerNodes.map((node) => ({ ...node, state: "Done" as NodeState })));
+          setNodes(paneerNodes.map((node) => ({ ...node, state: "Done" })));
           const finalReply = "Dinner coordinated for 8 pm.";
           finishTask(finalReply, "Household outcome", "4 calls · 7 min");
         }, 7600);
@@ -406,7 +384,7 @@ export default function Home() {
     }, 650);
   }
 
-  function submitText(event: FormEvent) {
+  function submitText(event) {
     event.preventDefault();
     if (!draft.trim()) return;
     const lowered = draft.toLowerCase();
@@ -415,11 +393,11 @@ export default function Home() {
     setDraft("");
   }
 
-  function savePerson(event: FormEvent<HTMLFormElement>) {
+  function savePerson(event) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const name = String(data.get("name") || missingName || "New person");
-    const person: Person = {
+    const person = {
       id: Date.now(), name, role: String(data.get("role") || "Other"),
       phone: String(data.get("phone") || "+91"), language: String(data.get("language") || "Hindi"),
       note: String(data.get("note") || ""), initials: name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
@@ -433,8 +411,8 @@ export default function Home() {
     later(() => setToast(""), 2600);
   }
 
-  function completeOnboarding(newPeople: Person[], outcome: string) {
-    const updated = newPeople.reduce<Person[]>((current, person) => {
+  function completeOnboarding(newPeople, outcome) {
+    const updated = newPeople.reduce((current, person) => {
       const exists = current.some((item) => item.name.toLowerCase() === person.name.toLowerCase());
       return exists ? current : [...current, person];
     }, people);
